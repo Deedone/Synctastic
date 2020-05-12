@@ -1,1 +1,1 @@
-web: ./synctastic
+web: ./bin/synctastic
