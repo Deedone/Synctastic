@@ -32,7 +32,7 @@ func handleWebsocket(w http.ResponseWriter, r *http.Request) {
 	}
 
 	client := fromWS(ws)
-	room.reg <- client
+	client.enterRoom(room)
 }
 
 func main() {

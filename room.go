@@ -8,6 +8,7 @@ type Room struct {
 	broadcast chan string
 	reg       chan *Client
 	unreg     chan *Client
+	vidTitle  string
 }
 
 func newRoom() *Room {
@@ -25,20 +26,21 @@ func (r *Room) run() {
 		select {
 		case client := <-r.reg:
 			r.clients[client] = true
-			client.bhandle = r.broadcast
 			fmt.Println("Registering", client)
 		case client := <-r.unreg:
+			fmt.Println("Dropping client", client)
 			if _, ok := r.clients[client]; ok {
 				delete(r.clients, client)
-				close(client.c)
 			}
 		case msg := <-r.broadcast:
 			for client := range r.clients {
-				select {
-				case client.c <- msg:
-				default:
-					close(client.c)
-					delete(r.clients, client)
+				if !client.host {
+					select {
+					case client.roomin <- msg:
+					default:
+						fmt.Println("Dropping client", client)
+						delete(r.clients, client)
+					}
 				}
 			}
 		}

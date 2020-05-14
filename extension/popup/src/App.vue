@@ -1,12 +1,14 @@
 <template>
   <div id="app">
+    <p>Network status: {{netstatus}}</p>
     <button @click="initOnTab">
       Start
     </button>
+      <button @click="sendControl('net','beHost')" >Be host</button>
     <p v-if="tab != -1"> Active on tab {{tab}}</p>
     <div v-if="tab != -1">
-      <button @click="sendControl('play')" >Play</button>
-      <button @click="sendControl('pause')">Pause</button>
+      <button @click="sendControl('video','play')" >Play</button>
+      <button @click="sendControl('video','pause')">Pause</button>
       <input type="text" v-model="inputTs" @change="sendTimestamp"> 
     </div>
     <div>
@@ -27,8 +29,7 @@ export default {
       status:"unknown",
       timestamp: 0,
       tab: -1,
-      inputTs = -1
-      
+      netstatus: -1,
     }
   },
 
@@ -47,6 +48,7 @@ export default {
           this.status = msg.data.status;
           this.timestamp = msg.data.timestamp;
           this.tab = msg.data.tab;
+          this.netstatus = msg.data.netstatus
         }
       }
       console.log(sender);
@@ -54,8 +56,8 @@ export default {
     initOnTab(){
       chrome.runtime.sendMessage({type:"control",cmd:"init"});
     },
-    sendControl(action){
-      chrome.runtime.sendMessage({type:"control",cmd:"video",data:action})
+    sendControl(cmd, action){
+      chrome.runtime.sendMessage({type:"control",cmd:cmd,data:action})
 
     },
     sendTimestamp(){

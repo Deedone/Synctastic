@@ -2,7 +2,6 @@ console.log("CONTENT");
 
 
 chrome.runtime.onMessage.addListener(msg => {
-    if (msg.type == "tab"){
         if (msg.cmd == "activate"){
             init();
             active = 1;
@@ -10,7 +9,6 @@ chrome.runtime.onMessage.addListener(msg => {
         if (msg.cmd == "deactivate"){
             active = 0;
         }
-    }
 });
 
 active = 0;
@@ -24,16 +22,16 @@ function init(){
     attachEvents(vid);
 
     chrome.runtime.onMessage.addListener(msg => {
-        if (msg.type == "tab"){
+        console.log("DA")
             if(msg.cmd == "pause"){
                 vid.pause();
             }else if (msg.cmd == "play"){
                 vid.play();
 
-            }else if (msg.cmd == "timestamp"){
-
             }
-        }
+            if (Math.abs(vid.currentTime - msg.timestamp) > 0.5){
+                vid.currentTime = msg.timestamp;
+            }
     })
 }
 
