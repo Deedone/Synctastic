@@ -30,9 +30,16 @@ export class VideoState {
     timestamp: number
     status: VIDEOSTATUS
 
-    constructor(st:VIDEOSTATUS, ts:number){
-        this.timestamp = ts
-        this.status = st
+    constructor(st:VIDEOSTATUS|any, ts?:number){
+        if (typeof st == "number" && typeof ts == "number"){
+            this.timestamp = ts;
+            this.status = st;
+        }else{
+            this.timestamp = st.timestamp;
+            this.status = st.status;
+        }
+
+        return this;
     }
 
     broadcast(){
@@ -58,6 +65,8 @@ export class InternalMessage {
             this.args = to.args;
         }
 
+        console.log("CREATE ARGS",this.args);
+        console.trace();
         return this;
     }
 
@@ -68,8 +77,9 @@ export class InternalMessage {
     }
 
     send(){
-        console.log("sending",this)
-        chrome.runtime.sendMessage(this)
+        console.log("sending",this);
+        console.trace();
+        chrome.runtime.sendMessage(this);
     }
 
     hasArgs(num : number){
@@ -80,5 +90,23 @@ export class InternalMessage {
         return this.cmd == cmd;
     }
 
+
+}
+
+export class WsMessage {
+    Cmd: string
+    StrArg: string|undefined
+    IntArg: number|undefined
+
+    constructor(json:string){
+        let x = JSON.parse(json);
+        this.Cmd = x.Cmd;
+        if (x.StrArg) {
+            this.StrArg = x.StrArg;
+        }
+        if (x.IntArg) {
+            this.IntArg = x.IntArg;
+        }
+    }
 
 }

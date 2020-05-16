@@ -1,4 +1,4 @@
-import {InternalMessage, VideoState, TO, CMD, VIDEOSTATUS} from "./internal_message"
+import {InternalMessage, WsMessage, VideoState, TO, CMD, VIDEOSTATUS} from "./internal_message"
 
 
 console.log("TEST PLUGIN")
@@ -57,14 +57,18 @@ function onWsMessage(msg:any){
         netstatus = "Offline";
     }, 11000)
 
-    let data = JSON.parse(msg.data)
+    let data = new WsMessage(msg.data);
 
     switch (data.Cmd){
         case "ping":
             ws.send(JSON.stringify({Cmd:"pong"}))
-
-        default:
-            onMessage(new InternalMessage(TO.BACKGROND,CMD.VIDEOCONTROL).addArgs(data.cmd));
+            break;
+        case "broadcast":
+            console.log("GOT WS DATA", data)
+            if (data.StrArg){
+                onMessage(new InternalMessage(TO.BACKGROND,CMD.VIDEOCONTROL).addArgs(JSON.parse(data.StrArg)));
+            }
+            break;
 
     }
 
@@ -92,6 +96,7 @@ function onMessage(inmsg:any){
             }
             setActive(tab);
             setupWs("wss://synctastic.herokuapp.com/")
+            setupWs("ws://127.0.0.1:1313")
         });
     }
     if (msg.is(CMD.FETCH)){
@@ -102,13 +107,14 @@ function onMessage(inmsg:any){
         ws.send(JSON.stringify({Cmd:"setHost", IntArg:1}));
     }
     if (msg.is(CMD.VIDEOSTATUS) && msg.hasArgs(1)){
-        vidstate = msg.args[0] as VideoState;
+        vidstate = new VideoState(msg.args[0]);
         if (host){
             ws.send(vidstate.broadcast())
         }
         updateView()
     }
     if (msg.is(CMD.VIDEOCONTROL) && msg.hasArgs(1)){
+        console.log("HERE BITCH")
         chrome.tabs.sendMessage(curTab,new InternalMessage(TO.TAB, CMD.VIDEOCONTROL).addArgs(msg.args[0]) );
     }
 }

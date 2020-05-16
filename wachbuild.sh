@@ -20,7 +20,7 @@ echo "Hit enter to rescan all projects"
 
 function vue { 
 echo "Setting up VUE watch"
-bash -c "cd extension/popup; find src | entr -s \"echo 'rebuild vues';npm run build \""&
+bash -c "cd extension/popup; find src | entr -s \"echo 'rebuild vues';npx webpack \""&
 echo "Hit enter to rescan all projects"
 }
 

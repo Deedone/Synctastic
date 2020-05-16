@@ -36,6 +36,7 @@ function init(){
         }
         if (msg.is(CMD.VIDEOCONTROL) && msg.hasArgs(1)){
             let state = msg.args[0] as VideoState;
+            console.log(state)
 
             if (state.status == VIDEOSTATUS.PAUSE){
                 vid.pause();
