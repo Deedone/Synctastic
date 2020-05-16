@@ -7,9 +7,8 @@
       <button @click="setHost()" >Be host</button>
     <p v-if="tab != -1"> Active on tab {{tab}}</p>
     <div v-if="tab != -1">
-      <button @click="sendControl('play')" >Play</button>
-      <button @click="sendControl('pause')">Pause</button>
-      <input type="text" v-model="inputTs" @change="sendTimestamp"> 
+      <button @click="vidControl('play')" >Play</button>
+      <button @click="vidControl('pause')">Pause</button>
     </div>
     <div>
       Video status is {{status}} <br>
@@ -22,7 +21,7 @@
 import Vue from 'vue';
 import Component from 'vue-class-component';
 
-import {InternalMessage, VideoState, TO, CMD, VIDEOSTATUS} from "./internal_message";
+import {InternalMessage, VideoState, TO, CMD, VIDEOSTATUS} from "../../internal_message";
 
 @Component
 export default class App extends Vue {
@@ -35,10 +34,11 @@ export default class App extends Vue {
   beforeMount(){
     console.log("taki before mount");
     chrome.runtime.onMessage.addListener((m) => this.onMessage(m));
-    chrome.runtime.sendMessage({type:"control", cmd:"fetch"});
+    new InternalMessage(TO.BACKGROND, CMD.FETCH).send();
   }
 
-  onMessage(msg:InternalMessage):void{
+  onMessage(inmsg:any):void{
+    let msg = new InternalMessage(inmsg);
     console.log(msg)
     if (msg.to != TO.POPUP){
       return;
@@ -78,7 +78,7 @@ export default class App extends Vue {
 }
 </script>
 
-<style>
+<style lang="css">
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;

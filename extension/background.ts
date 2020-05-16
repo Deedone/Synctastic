@@ -7,7 +7,7 @@ console.log("TEST PLUGIN")
 chrome.runtime.onMessage.addListener(onMessage);
 let curTab:number = -1;
 let curTabName:string = "";
-let vidstate:VideoState;
+let vidstate:VideoState|undefined;
 let netstatus = "offline"
 let watchdog = -1;
 let host = 0;
@@ -26,7 +26,9 @@ function setActive(tab:chrome.tabs.Tab){
     if (tab.title){
         curTabName = tab.title;
     }
-    vidstate = new VideoState(VIDEOSTATUS.UNKNOWN, 0);
+    if (!vidstate){
+        vidstate = new VideoState(VIDEOSTATUS.UNKNOWN, 0);
+    }
 
     updateView();
     chrome.tabs.sendMessage(curTab, new InternalMessage(TO.TAB, CMD.INIT));
@@ -36,6 +38,9 @@ function setInactive(tabId:number){
     chrome.tabs.sendMessage(tabId, new InternalMessage(TO.TAB, CMD.STOP));
 }
 function updateView(){
+    if (!vidstate){
+        vidstate = new VideoState(VIDEOSTATUS.UNKNOWN, 0);
+    }
     new InternalMessage(TO.POPUP, CMD.UPDATE)
     .addArgs([vidstate.status, vidstate.timestamp, curTabName, netstatus])
     .send();
@@ -66,13 +71,17 @@ function onWsMessage(msg:any){
     updateView();
 }
 
-function onMessage(msg:InternalMessage){
+function onMessage(inmsg:any){
+
+    let msg = new InternalMessage(inmsg);
+    console.log(inmsg); 
     console.log(msg); 
     if (msg.to != TO.BACKGROND){
         return;
     }
 
     if (msg.is(CMD.INIT)) {
+        console.log("GOT INIT")
         chrome.tabs.query({active:true, currentWindow:true}, (tabs) => {
             if (!tabs){
                 return;

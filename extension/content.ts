@@ -1,7 +1,8 @@
 import {InternalMessage, VideoState, TO, CMD, VIDEOSTATUS} from "./internal_message"
 
 console.log("CONTENT");
-chrome.runtime.onMessage.addListener((msg:InternalMessage) => {
+chrome.runtime.onMessage.addListener((inmsg:any) => {
+    let msg = new InternalMessage(inmsg);
     if (msg.to  != TO.TAB){
         return;
     }
@@ -24,7 +25,8 @@ function init(){
 
     attachEvents(vid);
 
-    chrome.runtime.onMessage.addListener((msg:InternalMessage) => {
+    chrome.runtime.onMessage.addListener((inmsg:any) => {
+    let msg = new InternalMessage(inmsg);
         if (!vid){
             console.log("Error video became null")
             return;

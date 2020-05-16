@@ -45,13 +45,22 @@ export class InternalMessage {
     cmd: CMD
     args: ARGS
 
-    constructor(to:TO, cmd:CMD) {
-        this.to = to;
-        this.cmd = cmd;
-        this.args = []
+    constructor(to:TO|any, cmd?:CMD) {
+        if(typeof to == "number" && typeof cmd == "number"){
+            console.log("path 1");
+            this.to = to;
+            this.cmd = cmd;
+            this.args = []
+        }else{
+            console.log("path 2", typeof to);
+            this.to = to.to;
+            this.cmd = to.cmd;
+            this.args = to.args;
+        }
 
         return this;
     }
+
 
     addArgs(args:ARGS|ARG){
         this.args = this.args.concat(args);
@@ -59,6 +68,7 @@ export class InternalMessage {
     }
 
     send(){
+        console.log("sending",this)
         chrome.runtime.sendMessage(this)
     }
 
