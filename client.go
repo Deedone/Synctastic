@@ -63,7 +63,7 @@ func (c *Client) handleMsg(msg string) {
 		c.host = m.IntArg == 1
 	case "broadcast":
 		if c.host && c.room != nil {
-			c.room.broadcast <- m.StrArg
+			c.room.broadcast <- msg
 		}
 	case "pong":
 		c.hadPong = true
@@ -87,7 +87,7 @@ func (c *Client) process() {
 				return
 			}
 			c.hadPong = false
-			c.wsout <- "{\"cmd\":\"ping\"}"
+			c.wsout <- "{\"Cmd\":\"ping\"}"
 			c.watchdog.Reset(time.Second * 10)
 
 		case <-c.control:

@@ -4,68 +4,77 @@
     <button @click="initOnTab">
       Start
     </button>
-      <button @click="sendControl('net','beHost')" >Be host</button>
+      <button @click="setHost()" >Be host</button>
     <p v-if="tab != -1"> Active on tab {{tab}}</p>
     <div v-if="tab != -1">
-      <button @click="sendControl('video','play')" >Play</button>
-      <button @click="sendControl('video','pause')">Pause</button>
+      <button @click="sendControl('play')" >Play</button>
+      <button @click="sendControl('pause')">Pause</button>
       <input type="text" v-model="inputTs" @change="sendTimestamp"> 
     </div>
     <div>
       Video status is {{status}} <br>
       Current timestamp is {{timestamp}}
     </div>
-  </div>
+  </div> 
 </template>
 
-<script>
+<script lang="ts">
+import Vue from 'vue';
+import Component from 'vue-class-component';
 
-export default {
-  name: 'App',
-  components: {
-  },
-  data: function() {
-    return {
-      status:"unknown",
-      timestamp: 0,
-      tab: -1,
-      netstatus: -1,
-    }
-  },
+import {InternalMessage, VideoState, TO, CMD, VIDEOSTATUS} from "./internal_message";
+
+@Component
+export default class App extends Vue {
+  name = 'App';
+  status ="unknown";
+  timestamp = 0;
+  tab = "";
+  netstatus = "";
 
   beforeMount(){
-    chrome.runtime.onMessage.addListener((m,sender) => this.onMessage(m, sender));
+    console.log("taki before mount");
+    chrome.runtime.onMessage.addListener((m) => this.onMessage(m));
     chrome.runtime.sendMessage({type:"control", cmd:"fetch"});
-  },
+  }
 
-  methods: {
-    onMessage(msg, sender){
-      if (msg.type == "view"){
-        if (msg.cmd == "chtab"){
-          this.tab = msg.data;
-        }
-        if (msg.cmd == "update"){
-          this.status = msg.data.status;
-          this.timestamp = msg.data.timestamp;
-          this.tab = msg.data.tab;
-          this.netstatus = msg.data.netstatus
-        }
-      }
-      console.log(sender);
-    },
-    initOnTab(){
-      chrome.runtime.sendMessage({type:"control",cmd:"init"});
-    },
-    sendControl(cmd, action){
-      chrome.runtime.sendMessage({type:"control",cmd:cmd,data:action})
-
-    },
-    sendTimestamp(){
-      chrome.runtime.sendMessage({type:"control",cmd:"video",data:"timeupdate"})
+  onMessage(msg:InternalMessage):void{
+    console.log(msg)
+    if (msg.to != TO.POPUP){
+      return;
     }
 
+    if (msg.is(CMD.UPDATE) && msg.hasArgs(4)){
+      this.status = msg.args[0] as string;
+      this.timestamp = msg.args[1] as number;
+      this.tab = msg.args[2] as string;
+      this.netstatus = msg.args[3] as string;
 
+
+
+    }
   }
+  initOnTab(){
+    console.log("Button pressed")
+    new InternalMessage(TO.BACKGROND, CMD.INIT).send()
+  }
+  vidControl(cmd:string){
+    if (cmd == "play") {
+      new InternalMessage(TO.BACKGROND, CMD.VIDEOCONTROL)
+      .addArgs(new VideoState(VIDEOSTATUS.PLAY,0))
+      .send();
+    }
+    if (cmd == "pause") {
+      new InternalMessage(TO.BACKGROND, CMD.VIDEOCONTROL)
+      .addArgs(new VideoState(VIDEOSTATUS.PAUSE,0))
+      .send();
+    }
+  }
+  setHost(){
+    new InternalMessage(TO.BACKGROND, CMD.BECOMEHOST).send()
+  }
+
+
 }
 </script>
 

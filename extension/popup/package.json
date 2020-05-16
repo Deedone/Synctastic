@@ -12,12 +12,16 @@
     "vue": "^2.6.11"
   },
   "devDependencies": {
+    "@types/chrome": "0.0.112",
     "@vue/cli-plugin-babel": "~4.3.0",
     "@vue/cli-plugin-eslint": "~4.3.0",
     "@vue/cli-service": "~4.3.0",
     "babel-eslint": "^10.1.0",
     "eslint": "^6.7.2",
     "eslint-plugin-vue": "^6.2.2",
+    "ts-loader": "^7.0.4",
+    "typescript": "^3.9.2",
+    "vue-class-component": "^7.2.3",
     "vue-template-compiler": "^2.6.11"
   },
   "eslintConfig": {
@@ -32,7 +36,10 @@
       "eslint:recommended"
     ],
     "parserOptions": {
-      "parser": "babel-eslint"
+      "parser": "babel-eslint",
+      "ecmaFeatures": {
+        "legacyDecorators": true
+      }
     },
     "rules": {}
   },

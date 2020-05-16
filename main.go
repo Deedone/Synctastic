@@ -45,5 +45,4 @@ func main() {
 	http.HandleFunc("/", handleWebsocket)
 	fmt.Println("LISTENING", port)
 	fmt.Println(http.ListenAndServe("0.0.0.0:"+port, nil))
-
 }
