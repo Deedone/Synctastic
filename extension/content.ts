@@ -1,4 +1,4 @@
-import {InternalMessage, VideoState, TO, CMD, VIDEOSTATUS} from "./internal_message"
+import {InternalMessage, VideoState, VideoInfo, TO, CMD, VIDEOSTATUS} from "./internal_message"
 
 console.log("CONTENT");
 chrome.runtime.onMessage.addListener((inmsg:any) => {
@@ -6,19 +6,26 @@ chrome.runtime.onMessage.addListener((inmsg:any) => {
     if (msg.to  != TO.TAB){
         return;
     }
-        if (msg.is(CMD.INIT)){
-            init();
+        if (msg.is(CMD.INIT) && msg.hasArgs(1) && typeof msg.args[0] == typeof 1){
+            init(msg.args[0] as number);
             active = 1;
         }
         if (msg.is(CMD.STOP)){
             active = 0;
         }
+
+        if (msg.is(CMD.VIDEOINFO) && msg.hasArgs(1)){
+            console.log("Gathering vide info in frame", msg.args[0]);
+            if (typeof msg.args[0] == "number"){
+                reportVideos(msg.args[0]);
+            }
+        }
 });
 
 let active = 0;
 
-function init(){
-    let vid:HTMLVideoElement|null = findVideo();
+function init(vidIndex:number){
+    let vid:HTMLVideoElement|null = findVideo(vidIndex);
     if (!vid){
         return;
     }
@@ -28,7 +35,6 @@ function init(){
     chrome.runtime.onMessage.addListener((inmsg:any) => {
     let msg = new InternalMessage(inmsg);
         if (!vid){
-            console.log("Error video became null")
             return;
         }
         if (msg.to != TO.TAB){
@@ -36,7 +42,6 @@ function init(){
         }
         if (msg.is(CMD.VIDEOCONTROL) && msg.hasArgs(1)){
             let state = msg.args[0] as VideoState;
-            console.log(state)
 
             if (state.status == VIDEOSTATUS.PAUSE){
                 vid.pause();
@@ -51,7 +56,6 @@ function init(){
 }
  
 function attachEvents(vid: HTMLVideoElement){
- 
     vid.addEventListener("play", onEvent);
     vid.addEventListener("pause", onEvent);
     vid.addEventListener("timeupdate", onEvent);
@@ -61,13 +65,11 @@ function onEvent(e:any){
     if (!active){
         return;
     }
-    console.log(e.type, e.target.currentTime);
-    console.log(e);
 
 
     let state = new VideoState(VIDEOSTATUS.UNKNOWN, e.target.currentTime);
     if (e.type == "play"){
-        state.status = VIDEOSTATUS.PAUSE;
+        state.status = VIDEOSTATUS.PLAY;
     }else if (e.type == "pause"){
         state.status = VIDEOSTATUS.PAUSE;
     }else{
@@ -79,12 +81,33 @@ function onEvent(e:any){
     .send()
 }
 
-function findVideo() {
-    let vids = document.querySelectorAll("video");
-    console.log(vids)
+function reportVideos(frameId:number) {
+    let msg = new InternalMessage(TO.BACKGROND, CMD.VIDEOINFO);
 
-    if(vids.length > 0){
-        return vids[0]
+    let vids = document.querySelectorAll("video");
+
+    vids.forEach((v, i) => {
+        let info:VideoInfo = {
+            src : v.src,
+            height : v.height,
+            width : v.width,
+            index : i,
+            y_offset : v.offsetTop,
+            frame_id: frameId,
+        };
+        console.log("Reporting video", info, v);
+        msg.addArgs(info);
+    })
+    msg.send();
+
+}
+
+function findVideo(i:number) {
+    let vids = document.querySelectorAll("video");
+
+
+    if(vids.length > i){
+        return vids[i]
     }
     return null;
 }

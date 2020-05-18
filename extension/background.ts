@@ -1,18 +1,23 @@
-import {InternalMessage, WsMessage, VideoState, TO, CMD, VIDEOSTATUS} from "./internal_message"
-
-
-console.log("TEST PLUGIN")
+import {InternalMessage, VideoInfo, WsMessage, VideoState, TO, CMD, VIDEOSTATUS} from "./internal_message"
 
 
 chrome.runtime.onMessage.addListener(onMessage);
 let curTab:number = -1;
+let curFrame:number = -1;
 let curTabName:string = "";
 let vidstate:VideoState|undefined;
 let netstatus = "offline"
 let watchdog = -1;
 let host = 0;
 let ws:WebSocket;
-
+let bestVideo:VideoInfo = {
+    src:"",
+    width:-1,
+    height:-1,
+    frame_id:-1,
+    index:-1,
+    y_offset:-1
+};
 
 function setupWs(addr:string){
     ws = new WebSocket(addr);
@@ -31,11 +36,17 @@ function setActive(tab:chrome.tabs.Tab){
     }
 
     updateView();
-    chrome.tabs.sendMessage(curTab, new InternalMessage(TO.TAB, CMD.INIT));
 }
 
 function setInactive(tabId:number){
-    chrome.tabs.sendMessage(tabId, new InternalMessage(TO.TAB, CMD.STOP));
+    new InternalMessage(TO.TAB, CMD.STOP)
+    .sendTab(tabId, curFrame);
+    curTab = -1;
+    curTabName = "";
+    if (ws){
+        ws.close()
+    }
+
 }
 function updateView(){
     if (!vidstate){
@@ -49,7 +60,6 @@ function updateView(){
 
 function onWsMessage(msg:any){
     netstatus = "Online"
-    console.log(msg.data);
     if (watchdog > -1){
         clearTimeout(watchdog)
     }
@@ -64,7 +74,6 @@ function onWsMessage(msg:any){
             ws.send(JSON.stringify({Cmd:"pong"}))
             break;
         case "broadcast":
-            console.log("GOT WS DATA", data)
             if (data.StrArg){
                 onMessage(new InternalMessage(TO.BACKGROND,CMD.VIDEOCONTROL).addArgs(JSON.parse(data.StrArg)));
             }
@@ -78,27 +87,75 @@ function onWsMessage(msg:any){
 function onMessage(inmsg:any){
 
     let msg = new InternalMessage(inmsg);
-    console.log(inmsg); 
-    console.log(msg); 
     if (msg.to != TO.BACKGROND){
         return;
     }
 
     if (msg.is(CMD.INIT)) {
-        console.log("GOT INIT")
         chrome.tabs.query({active:true, currentWindow:true}, (tabs) => {
             if (!tabs){
                 return;
             }
             let tab = tabs[0];
+            if (typeof tab.id != typeof 1){
+                return;
+            }
             if (curTab != -1){
                 setInactive(curTab);
             }
             setActive(tab);
             setupWs("wss://synctastic.herokuapp.com/")
             setupWs("ws://127.0.0.1:1313")
+            let tabid = tab.id;
+            chrome.webNavigation.getAllFrames({tabId:tabid as number}, (frames) => {
+                if (!frames){
+                    return;
+                }
+                for (let i = 0; i < frames!.length; i++){
+                    if (typeof frames[i].frameId != typeof 1)
+                    console.log("Frame ", frames![i]!.frameId);
+                    let m = new InternalMessage(TO.TAB, CMD.VIDEOINFO)
+                    .addArgs(frames![i].frameId)
+                    .sendTab(tabid!, frames[i].frameId)
+                }
+            })
+            // Wait for messages to return
+            setTimeout(() => {
+                if(bestVideo.frame_id == -1){
+                    //No videos
+                    setInactive(curTab);
+                    return;
+                }
+                console.log("Best found vudeo is", bestVideo);
+                curFrame = bestVideo.frame_id;
+                let m = new InternalMessage(TO.TAB, CMD.INIT)
+                .addArgs(bestVideo.index)
+                .sendTab(curTab, curFrame);
+            }, 300);//0.3seconds
         });
     }
+    if (msg.is(CMD.VIDEOINFO) && msg.hasArgs(1)){
+        msg.args.forEach(arg => {
+            if(typeof arg != typeof {}){
+                return;
+            }
+            // Find largest video
+            //If sizes are same choose topmost one
+            //Hope its one with lower frame_id
+            let info = arg as VideoInfo;
+            if (info.src == ""){
+                return;
+            }
+            if (info.width > bestVideo.width){
+                bestVideo = info;
+            }else if(info.width == bestVideo.width){
+                if (info.frame_id < bestVideo.frame_id ){
+                    bestVideo = info;
+                }
+            }
+        })
+    }
+
     if (msg.is(CMD.FETCH)){
         updateView();
     }
@@ -114,7 +171,7 @@ function onMessage(inmsg:any){
         updateView()
     }
     if (msg.is(CMD.VIDEOCONTROL) && msg.hasArgs(1)){
-        console.log("HERE BITCH")
-        chrome.tabs.sendMessage(curTab,new InternalMessage(TO.TAB, CMD.VIDEOCONTROL).addArgs(msg.args[0]) );
+        new InternalMessage(TO.TAB, CMD.VIDEOCONTROL).addArgs(msg.args[0])
+        .sendTab(curTab, curFrame);
     }
 }

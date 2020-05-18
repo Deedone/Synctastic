@@ -15,6 +15,7 @@ export enum CMD {
     VIDEOCONTROL,
     STOP,
     UPDATE,
+    VIDEOINFO
 }
 
 export enum VIDEOSTATUS {
@@ -23,8 +24,17 @@ export enum VIDEOSTATUS {
     PLAY,
 }
 
+export interface VideoInfo {
+    src: string
+    width: number
+    height: number
+    y_offset: number
+    index: number
+    frame_id: number
+}
+
 type ARGS = (ARG)[]
-type ARG = string | number | VideoState
+type ARG = string | number | VideoState | VideoInfo
 
 export class VideoState {
     timestamp: number
@@ -54,19 +64,15 @@ export class InternalMessage {
 
     constructor(to:TO|any, cmd?:CMD) {
         if(typeof to == "number" && typeof cmd == "number"){
-            console.log("path 1");
             this.to = to;
             this.cmd = cmd;
             this.args = []
         }else{
-            console.log("path 2", typeof to);
             this.to = to.to;
             this.cmd = to.cmd;
             this.args = to.args;
         }
 
-        console.log("CREATE ARGS",this.args);
-        console.trace();
         return this;
     }
 
@@ -77,9 +83,16 @@ export class InternalMessage {
     }
 
     send(){
-        console.log("sending",this);
-        console.trace();
         chrome.runtime.sendMessage(this);
+    }
+
+    sendTab(tabId: number, frameId?:number){
+        if (typeof frameId == typeof 1){
+            chrome.tabs.sendMessage(tabId, this, {frameId:frameId});
+        }else{
+            chrome.tabs.sendMessage(tabId, this);
+
+        }
     }
 
     hasArgs(num : number){
