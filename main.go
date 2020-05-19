@@ -15,7 +15,7 @@ var upgrader = websocket.Upgrader{
 		return true
 	},
 }
-var room = newRoom()
+var lobby = newLobby()
 
 func handleWebsocket(w http.ResponseWriter, r *http.Request) {
 
@@ -32,7 +32,7 @@ func handleWebsocket(w http.ResponseWriter, r *http.Request) {
 	}
 
 	client := fromWS(ws)
-	client.enterRoom(room)
+	client.enterLobby(lobby)
 }
 
 func main() {
@@ -40,7 +40,6 @@ func main() {
 	if port == "" {
 		port = "1313"
 	}
-	go room.run()
 
 	http.HandleFunc("/", handleWebsocket)
 	fmt.Println("LISTENING", port)

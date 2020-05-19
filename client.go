@@ -14,6 +14,7 @@ type Client struct {
 	hadPong  bool
 	ws       *websocket.Conn
 	room     *Room
+	lobby    *Lobby
 	roomin   chan string
 	wsin     chan string
 	wsout    chan string
@@ -22,9 +23,9 @@ type Client struct {
 }
 
 type Message struct {
-	Cmd    string
-	IntArg float64
-	StrArg string
+	Cmd    string  `json:"cmd"`
+	IntArg float64 `json:"intArg"`
+	StrArg string  `json:"strArg"`
 }
 
 func fromWS(ws *websocket.Conn) *Client {
@@ -32,12 +33,14 @@ func fromWS(ws *websocket.Conn) *Client {
 		ws:       ws,
 		host:     false,
 		room:     nil,
+		lobby:    nil,
 		roomin:   make(chan string, 10),
 		wsin:     make(chan string, 10),
 		wsout:    make(chan string),
 		control:  make(chan bool, 10),
 		watchdog: time.NewTimer(time.Second),
 		hadPong:  true,
+		name:     "Client",
 	}
 
 	go c.wsWrite()
@@ -61,9 +64,17 @@ func (c *Client) handleMsg(msg string) {
 		c.name = m.StrArg
 	case "setHost":
 		c.host = m.IntArg == 1
+	case "createRoom":
+		r := c.lobby.createRoom()
+		c.enterRoom(r)
+	case "joinRoom":
+		res := c.lobby.joinRoom(int(m.IntArg), c)
+		if !res {
+			fmt.Println("Joining failed")
+		}
 	case "broadcast":
 		if c.host && c.room != nil {
-			c.room.broadcast <- msg
+			c.room.broadcastChan <- msg
 		}
 	case "pong":
 		c.hadPong = true
@@ -87,7 +98,10 @@ func (c *Client) process() {
 				return
 			}
 			c.hadPong = false
-			c.wsout <- "{\"Cmd\":\"ping\"}"
+			var m Message
+			m.Cmd = "ping"
+			mstr, _ := json.Marshal(m)
+			c.wsout <- string(mstr)
 			c.watchdog.Reset(time.Second * 10)
 
 		case <-c.control:
@@ -137,18 +151,31 @@ func (c *Client) wsRead() {
 	}
 }
 
+func (c *Client) enterLobby(l *Lobby) {
+	c.lobby = l
+}
+
 func (c *Client) enterRoom(r *Room) {
+	c.exitRoom() //If we currently in some other room, exit it first
 	c.room = r
-	r.reg <- c
+	r.reg(c)
+}
+
+func (c *Client) exitRoom() {
+	if c.room != nil {
+		c.room.unreg(c)
+		c.room = nil
+
+	}
 }
 
 func (c *Client) kill() {
+	if c.room != nil {
+		c.room.unreg(c)
+	}
 	for i := 0; i < 10; i++ {
 		// Stop all routines
 		c.control <- true
-	}
-	if c.room != nil {
-		c.room.unreg <- c
 	}
 	close(c.roomin)
 	close(c.wsin)

@@ -15,7 +15,9 @@ export enum CMD {
     VIDEOCONTROL,
     STOP,
     UPDATE,
-    VIDEOINFO
+    VIDEOINFO,
+    CREATEROOM,
+    JOINROOM
 }
 
 export enum VIDEOSTATUS {
@@ -53,7 +55,10 @@ export class VideoState {
     }
 
     broadcast(){
-        return JSON.stringify({Cmd:"broadcast", StrArg:JSON.stringify(this)});
+        let m = new WsMessage()
+        m.cmd = "broadcast"
+        m.strArg = JSON.stringify(this)
+        return JSON.stringify(m);
     }
 }
 
@@ -107,19 +112,25 @@ export class InternalMessage {
 }
 
 export class WsMessage {
-    Cmd: string
-    StrArg: string|undefined
-    IntArg: number|undefined
+    cmd: string|undefined
+    strArg: string|undefined
+    intArg: number|undefined
 
-    constructor(json:string){
-        let x = JSON.parse(json);
-        this.Cmd = x.Cmd;
-        if (x.StrArg) {
-            this.StrArg = x.StrArg;
+    constructor(json?:string){
+        if (json != undefined) {
+            let x = JSON.parse(json);
+            this.cmd = x.cmd;
+            if (x.strArg) {
+                this.strArg = x.strArg;
+            }
+            if (x.intArg) {
+                this.intArg = x.sntArg;
+            }
         }
-        if (x.IntArg) {
-            this.IntArg = x.IntArg;
-        }
+    }
+
+    json() {
+        return JSON.stringify(this);
     }
 
 }

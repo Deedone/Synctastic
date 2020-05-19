@@ -10,6 +10,8 @@ let netstatus = "offline"
 let watchdog = -1;
 let host = 0;
 let ws:WebSocket;
+let roomId = 0;
+let roomUsers = 0;
 let bestVideo:VideoInfo = {
     src:"",
     width:-1,
@@ -34,6 +36,8 @@ function setActive(tab:chrome.tabs.Tab){
     if (!vidstate){
         vidstate = new VideoState(VIDEOSTATUS.UNKNOWN, 0);
     }
+    //TODO gracefully detect tab closing
+    //TODO check that urls match
 
     updateView();
 }
@@ -53,7 +57,7 @@ function updateView(){
         vidstate = new VideoState(VIDEOSTATUS.UNKNOWN, 0);
     }
     new InternalMessage(TO.POPUP, CMD.UPDATE)
-    .addArgs([vidstate.status, vidstate.timestamp, curTabName, netstatus])
+    .addArgs([vidstate.status, vidstate.timestamp, curTabName, netstatus, roomId, roomUsers])
     .send();
 
 }
@@ -69,13 +73,26 @@ function onWsMessage(msg:any){
 
     let data = new WsMessage(msg.data);
 
-    switch (data.Cmd){
+    console.log(data, msg.data);
+    switch (data.cmd){
         case "ping":
-            ws.send(JSON.stringify({Cmd:"pong"}))
+            console.log("Got ping")
+            let msg = new WsMessage();
+            msg.cmd = "pong";
+            ws.send(JSON.stringify(msg));
+            break;
+        case "roomInfo":
+            if (!data.strArg){
+                break
+            }
+            let info = JSON.parse(data.strArg);
+            roomId = info.id;
+            roomUsers = info.numClients;
+            updateView();
             break;
         case "broadcast":
-            if (data.StrArg){
-                onMessage(new InternalMessage(TO.BACKGROND,CMD.VIDEOCONTROL).addArgs(JSON.parse(data.StrArg)));
+            if (data.strArg){
+                onMessage(new InternalMessage(TO.BACKGROND,CMD.VIDEOCONTROL).addArgs(JSON.parse(data.strArg)));
             }
             break;
 
@@ -91,6 +108,7 @@ function onMessage(inmsg:any){
         return;
     }
 
+    console.log("Got msg", msg)
     if (msg.is(CMD.INIT)) {
         chrome.tabs.query({active:true, currentWindow:true}, (tabs) => {
             if (!tabs){
@@ -104,7 +122,7 @@ function onMessage(inmsg:any){
                 setInactive(curTab);
             }
             setActive(tab);
-            setupWs("wss://synctastic.herokuapp.com/")
+            //setupWs("wss://synctastic.herokuapp.com/")
             setupWs("ws://127.0.0.1:1313")
             let tabid = tab.id;
             chrome.webNavigation.getAllFrames({tabId:tabid as number}, (frames) => {
@@ -142,6 +160,7 @@ function onMessage(inmsg:any){
             // Find largest video
             //If sizes are same choose topmost one
             //Hope its one with lower frame_id
+            //TODO: imlement actual gathering of frame positions and sizes
             let info = arg as VideoInfo;
             if (info.src == ""){
                 return;
@@ -161,7 +180,10 @@ function onMessage(inmsg:any){
     }
     if (msg.is(CMD.BECOMEHOST)){
         host = 1;
-        ws.send(JSON.stringify({Cmd:"setHost", IntArg:1}));
+        let m = new WsMessage();
+        m.cmd = "setHost";
+        m.intArg = 1;
+        ws.send(JSON.stringify(m));
     }
     if (msg.is(CMD.VIDEOSTATUS) && msg.hasArgs(1)){
         vidstate = new VideoState(msg.args[0]);
@@ -169,6 +191,18 @@ function onMessage(inmsg:any){
             ws.send(vidstate.broadcast())
         }
         updateView()
+    }
+    if (msg.is(CMD.CREATEROOM)){
+        let m = new WsMessage()
+        m.cmd = "createRoom"
+        ws.send(m.json())
+    }
+    if (msg.is(CMD.JOINROOM) && msg.hasArgs(1) && typeof msg.args[0] == typeof 1){
+        let m = new WsMessage()
+        m.cmd = "joinRoom"
+        m.intArg = msg.args[0] as number;
+        console.log("Join room msg", m)
+        ws.send(m.json())
     }
     if (msg.is(CMD.VIDEOCONTROL) && msg.hasArgs(1)){
         new InternalMessage(TO.TAB, CMD.VIDEOCONTROL).addArgs(msg.args[0])

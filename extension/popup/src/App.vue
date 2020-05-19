@@ -14,6 +14,14 @@
       Video status is {{status}} <br>
       Current timestamp is {{timestamp}}
     </div>
+
+    <button @click="createRoom">Create room</button>
+    <input type="text" v-model="enteredRoomId">
+    <button @click="joinRoom">Join room</button>
+    <div>
+      Room id: {{roomId}}<br>
+      Room users: {{roomUsers}}<br>
+    </div>
   </div> 
 </template>
 
@@ -30,11 +38,25 @@ export default class App extends Vue {
   timestamp = 0;
   tab = "";
   netstatus = "";
+  roomId = 0;
+  roomUsers = 0;
+  enteredRoomId = "";
 
   beforeMount(){
     console.log("taki before mount");
     chrome.runtime.onMessage.addListener((m) => this.onMessage(m));
     new InternalMessage(TO.BACKGROND, CMD.FETCH).send();
+  }
+
+  createRoom() {
+    new InternalMessage(TO.BACKGROND, CMD.CREATEROOM).send();
+  }
+
+  joinRoom(){
+    console.log("Join room")
+    new InternalMessage(TO.BACKGROND, CMD.JOINROOM)
+    .addArgs(parseInt(this.enteredRoomId))
+    .send();
   }
 
   onMessage(inmsg:any):void{
@@ -49,9 +71,8 @@ export default class App extends Vue {
       this.timestamp = msg.args[1] as number;
       this.tab = msg.args[2] as string;
       this.netstatus = msg.args[3] as string;
-
-
-
+      this.roomId = msg.args[4] as number
+      this.roomUsers = msg.args[5] as number
     }
   }
   initOnTab(){
