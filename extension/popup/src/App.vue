@@ -1,37 +1,29 @@
 <template>
   <div id="app">
-    <p>Network status: {{netstatus}}</p>
-    <button @click="initOnTab">
-      Start
-    </button>
-      <button @click="setHost()" >Be host</button>
-    <p v-if="tab != -1"> Active on tab {{tab}}</p>
-    <div v-if="tab != -1">
-      <button @click="vidControl('play')" >Play</button>
-      <button @click="vidControl('pause')">Pause</button>
+    <div class="topbar">
+      {{topbarTitle}}
+      <button class="topbar-button">
+        <i class="material-icons" id="topbar-button-icon">help_outline</i>
+      </button>
     </div>
-    <div>
-      Video status is {{status}} <br>
-      Current timestamp is {{timestamp}}
-    </div>
-
-    <button @click="createRoom">Create room</button>
-    <input type="text" v-model="enteredRoomId">
-    <button @click="joinRoom">Join room</button>
-    <div>
-      Room id: {{roomId}}<br>
-      Room users: {{roomUsers}}<br>
-    </div>
-  </div> 
+    <start></start>
+  </div>
 </template>
 
 <script lang="ts">
 import Vue from 'vue';
 import Component from 'vue-class-component';
+import start from './components/start.vue';
 
 import {InternalMessage, VideoState, TO, CMD, VIDEOSTATUS} from "../../internal_message";
 
-@Component
+@Component({
+  name: 'App',
+  components: {
+    start
+  }
+})
+
 export default class App extends Vue {
   name = 'App';
   status ="unknown";
@@ -41,6 +33,12 @@ export default class App extends Vue {
   roomId = 0;
   roomUsers = 0;
   enteredRoomId = "";
+
+  /*Props stuff?*/
+  state = "Start"
+  topbarTitle = "Welcome"
+  topbarButtonAction=
+
 
   beforeMount(){
     console.log("taki before mount");
@@ -100,12 +98,61 @@ export default class App extends Vue {
 </script>
 
 <style lang="css">
+html, body {
+  margin: 0px;
+  padding: 0px;
+  border: none;
+}
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
+  width: 300px;
+  height: 400px;
+  background-color: #FEFEFE;
+}
+.topbar {
+  background: #046F55;
+  width: 300px;
+  height: 50px;
+  box-shadow: 0px 3px 2px #AEAEAE;
+  font-size: 26px;
+  color: #FEFEFE;
+  display: inline-block;
+  text-align: left;
+  line-height: 50px;
+  padding-left: 20px;
+  padding-right: 20px;
+  vertical-align: middle;
+}
+.topbar-button {
+  background: transparent;
+  width: 20px;
+  height: 25px;
+  border: 1px black;
+  position: absolute;
+  right: 10px;
+  top: 15px;
+  display: inline-block;
+  vertical-align: middle;
+  &:
+}
+
+.topbar-button:hover {
+  transform: scale(1.2);
+}
+
+.topbar-button:focus {
+  outline: 0;
+}
+
+#topbar-button-icon {
+  width: 20px;
+  height: 25px;
+  position: absolute;
+  right: 8px;
+  top: 0px;
+  color: white;
 }
 </style>
