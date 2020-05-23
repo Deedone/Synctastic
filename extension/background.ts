@@ -2,56 +2,84 @@ import {InternalMessage, VideoInfo, WsMessage, VideoState, TO, CMD, VIDEOSTATUS}
 
 
 chrome.runtime.onMessage.addListener(onMessage);
-let curTab:number = -1;
-let curFrame:number = -1;
-let curTabName:string = "";
 let vidstate:VideoState|undefined;
+let curTabName:string = "";
 let netstatus = "offline"
 let watchdog = -1;
 let host = 0;
 let ws:WebSocket;
 let roomId = 0;
 let roomUsers = 0;
-let bestVideo:VideoInfo = {
-    src:"",
-    width:-1,
-    height:-1,
-    frame_id:-1,
-    index:-1,
-    y_offset:-1
-};
+let videos: VideoInfo[] = [];
+let curVideo: VideoInfo|undefined;
+let serverCurrent = {
+    url : "",
+    tabIndex: 0
+}
+
+
+chrome.tabs.onRemoved.addListener(tabId => {
+    console.log("On tab closed", tabId);
+    videos = videos.filter(vid => vid.tabId != tabId);
+    console.log("Vids are", videos);
+
+});
+
+chrome.webNavigation.onBeforeNavigate.addListener(details => {
+    console.log("OnBeforeNavigate", details);
+    videos = videos.filter(vid => vid.tabId != details.tabId || (details.frameId != 0 && details.frameId != vid.frameId));
+    console.log("Vids are", videos);
+});
 
 function setupWs(addr:string){
     ws = new WebSocket(addr);
     ws.onmessage = onWsMessage
 }
 
-function setActive(tab:chrome.tabs.Tab){
-    if (tab.id){
-        curTab = tab.id;
+function isValidId(id:number|undefined) :boolean{ 
+    if (typeof id != typeof 1){
+        return false;
     }
-    if (tab.title){
-        curTabName = tab.title;
+    if (id! < 0){
+        return false;
     }
+    return true;
+}
+
+function awaitSocket(f:Function) {
+   let attempt = 0;
+   let later = setInterval(() => {
+        attempt++;
+        if (attempt > 40){
+            console.log("Timeout WS connection");
+            clearInterval(later);
+        }
+        if (ws.readyState != ws.OPEN){
+            return;
+        }
+        f();
+        clearInterval(later);
+   }, 50);
+}
+
+function setActive(tab:number){
     if (!vidstate){
         vidstate = new VideoState(VIDEOSTATUS.UNKNOWN, 0);
     }
     //TODO gracefully detect tab closing
     //TODO check that urls match
+    curTabName = tab as unknown as string;
 
     updateView();
 }
 
-function setInactive(tabId:number){
-    new InternalMessage(TO.TAB, CMD.STOP)
-    .sendTab(tabId, curFrame);
-    curTab = -1;
-    curTabName = "";
-    if (ws){
-        ws.close()
-    }
-
+function selectVideo(vid:VideoInfo){
+    console.log("Selecting video", vid);
+    curVideo = vid;
+    setActive(vid.tabId);
+    //TODO send network updates if host
 }
+
 function updateView(){
     if (!vidstate){
         vidstate = new VideoState(VIDEOSTATUS.UNKNOWN, 0);
@@ -60,6 +88,20 @@ function updateView(){
     .addArgs([vidstate.status, vidstate.timestamp, curTabName, netstatus, roomId, roomUsers])
     .send();
 
+}
+
+function trySelectVideo(){
+    if (serverCurrent.url == ""){
+        return;
+    }
+
+    videos.forEach(v => {
+        if(v.tabUrl == serverCurrent.url && v.tabIndex == serverCurrent.tabIndex){
+            if (curVideo && curVideo.src != v.src){
+                selectVideo(v);
+            }
+        }
+    })
 }
 
 function onWsMessage(msg:any){
@@ -71,9 +113,9 @@ function onWsMessage(msg:any){
         netstatus = "Offline";
     }, 11000)
 
-    let data = new WsMessage(msg.data);
 
-    console.log(data, msg.data);
+    console.log(msg.data);
+    let data = new WsMessage(msg.data);
     switch (data.cmd){
         case "ping":
             console.log("Got ping")
@@ -90,6 +132,13 @@ function onWsMessage(msg:any){
             roomUsers = info.numClients;
             updateView();
             break;
+        case "selectVideo":
+            // Store server preffered video and try to select it immediately
+            // this attempt also happens when new videos are reported
+            serverCurrent.url = data.strArg!;
+            serverCurrent.tabIndex = data.intArg!;
+            trySelectVideo();
+            break;
         case "broadcast":
             if (data.strArg){
                 onMessage(new InternalMessage(TO.BACKGROND,CMD.VIDEOCONTROL).addArgs(JSON.parse(data.strArg)));
@@ -101,7 +150,19 @@ function onWsMessage(msg:any){
     updateView();
 }
 
-function onMessage(inmsg:any){
+function sendCurVideo(){
+    console.log("CUR VIDE IS", curVideo)
+    if (!curVideo){
+        return;
+    }
+    let wsmsg = new WsMessage()
+    wsmsg.cmd = "selectVideo";
+    wsmsg.strArg = curVideo.tabUrl;
+    wsmsg.intArg = curVideo.tabIndex;
+    ws.send(wsmsg.json());
+}
+
+function onMessage(inmsg:any, sender?:any){
 
     let msg = new InternalMessage(inmsg);
     if (msg.to != TO.BACKGROND){
@@ -110,80 +171,42 @@ function onMessage(inmsg:any){
 
     console.log("Got msg", msg)
     if (msg.is(CMD.INIT)) {
-        chrome.tabs.query({active:true, currentWindow:true}, (tabs) => {
-            if (!tabs){
-                return;
-            }
-            let tab = tabs[0];
-            if (typeof tab.id != typeof 1){
-                return;
-            }
-            if (curTab != -1){
-                setInactive(curTab);
-            }
-            setActive(tab);
-            //setupWs("wss://synctastic.herokuapp.com/")
-            setupWs("ws://127.0.0.1:1313")
-            let tabid = tab.id;
-            chrome.webNavigation.getAllFrames({tabId:tabid as number}, (frames) => {
-                if (!frames){
-                    return;
-                }
-                for (let i = 0; i < frames!.length; i++){
-                    if (typeof frames[i].frameId != typeof 1)
-                    console.log("Frame ", frames![i]!.frameId);
-                    let m = new InternalMessage(TO.TAB, CMD.VIDEOINFO)
-                    .addArgs(frames![i].frameId)
-                    .sendTab(tabid!, frames[i].frameId)
-                }
-            })
-            // Wait for messages to return
-            setTimeout(() => {
-                if(bestVideo.frame_id == -1){
-                    //No videos
-                    setInactive(curTab);
-                    return;
-                }
-                console.log("Best found vudeo is", bestVideo);
-                curFrame = bestVideo.frame_id;
-                let m = new InternalMessage(TO.TAB, CMD.INIT)
-                .addArgs(bestVideo.index)
-                .sendTab(curTab, curFrame);
-            }, 300);//0.3seconds
-        });
+        //setupWs("wss://synctastic.herokuapp.com/")
+        setupWs("ws://127.0.0.1:1313")
     }
+
     if (msg.is(CMD.VIDEOINFO) && msg.hasArgs(1)){
+        console.log("GOT VIDEO INFO")
+        if (!sender || !sender.tab || !isValidId(sender.frameId)){
+            return;
+        }
         msg.args.forEach(arg => {
-            if(typeof arg != typeof {}){
+            if (typeof arg != typeof {}){
                 return;
             }
-            // Find largest video
-            //If sizes are same choose topmost one
-            //Hope its one with lower frame_id
-            //TODO: imlement actual gathering of frame positions and sizes
-            let info = arg as VideoInfo;
-            if (info.src == ""){
-                return;
-            }
-            if (info.width > bestVideo.width){
-                bestVideo = info;
-            }else if(info.width == bestVideo.width){
-                if (info.frame_id < bestVideo.frame_id ){
-                    bestVideo = info;
-                }
-            }
+            let video:VideoInfo = arg as VideoInfo;
+            video.frameId = sender.frameId;
+            video.tabId = sender.tab.id;
+            video.tabUrl = sender.url;
+
+            console.log("Found video", video);
+            videos.push(video);
         })
+        trySelectVideo();
     }
 
     if (msg.is(CMD.FETCH)){
         updateView();
     }
     if (msg.is(CMD.BECOMEHOST)){
-        host = 1;
-        let m = new WsMessage();
-        m.cmd = "setHost";
-        m.intArg = 1;
-        ws.send(JSON.stringify(m));
+        awaitSocket(() => {
+            host = 1;
+            let m = new WsMessage();
+            m.cmd = "setHost";
+            m.intArg = 1;
+            ws.send(JSON.stringify(m));
+            sendCurVideo();
+        });
     }
     if (msg.is(CMD.VIDEOSTATUS) && msg.hasArgs(1)){
         vidstate = new VideoState(msg.args[0]);
@@ -192,20 +215,43 @@ function onMessage(inmsg:any){
         }
         updateView()
     }
+    if (msg.is(CMD.SELECTVIDEO) && msg.hasArgs(1)){
+        console.log("GOT SELECT VIDEO");
+        let src = msg.args[0] as string;
+        for(let vid of videos){
+            if(vid.src == src){
+                selectVideo(vid);
+                break;
+            }
+        }
+        if (curVideo && host){
+            sendCurVideo()
+        }
+
+    }
     if (msg.is(CMD.CREATEROOM)){
-        let m = new WsMessage()
-        m.cmd = "createRoom"
-        ws.send(m.json())
+        awaitSocket(() => {
+            let m = new WsMessage()
+            m.cmd = "createRoom"
+            ws.send(m.json())
+        })
     }
     if (msg.is(CMD.JOINROOM) && msg.hasArgs(1) && typeof msg.args[0] == typeof 1){
-        let m = new WsMessage()
-        m.cmd = "joinRoom"
-        m.intArg = msg.args[0] as number;
-        console.log("Join room msg", m)
-        ws.send(m.json())
+        console.log("Got join room cmd")
+        awaitSocket(() => {
+            let m = new WsMessage()
+            m.cmd = "joinRoom"
+            m.intArg = msg.args[0] as number;
+            console.log("Join room msg", m)
+            ws.send(m.json())
+        });
     }
     if (msg.is(CMD.VIDEOCONTROL) && msg.hasArgs(1)){
-        new InternalMessage(TO.TAB, CMD.VIDEOCONTROL).addArgs(msg.args[0])
-        .sendTab(curTab, curFrame);
+        if (curVideo){
+            new InternalMessage(TO.TAB, CMD.VIDEOCONTROL)
+            .addArgs(curVideo.src)
+            .addArgs(msg.args[0])
+            .sendTab(curVideo.tabId, curVideo.frameId);
+        }
     }
 }

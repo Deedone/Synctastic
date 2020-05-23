@@ -76,6 +76,10 @@ func (c *Client) handleMsg(msg string) {
 		if c.host && c.room != nil {
 			c.room.broadcastChan <- msg
 		}
+	case "selectVideo":
+		if c.host && c.room != nil {
+			c.room.changeVideo(msg)
+		}
 	case "pong":
 		c.hadPong = true
 

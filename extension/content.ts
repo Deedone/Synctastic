@@ -3,32 +3,73 @@ import {InternalMessage, VideoState, VideoInfo, TO, CMD, VIDEOSTATUS} from "./in
 console.log("CONTENT");
 chrome.runtime.onMessage.addListener((inmsg:any) => {
     let msg = new InternalMessage(inmsg);
+    console.log(msg);
     if (msg.to  != TO.TAB){
         return;
     }
         if (msg.is(CMD.INIT) && msg.hasArgs(1) && typeof msg.args[0] == typeof 1){
-            init(msg.args[0] as number);
             active = 1;
         }
         if (msg.is(CMD.STOP)){
             active = 0;
         }
+        if (msg.is(CMD.VIDEOCONTROL) && msg.hasArgs(2)){
+            console.log("Got videocontrol", msg)
+            let url = msg.args[0] as string;
+            let state = msg.args[1] as VideoState;
 
-        if (msg.is(CMD.VIDEOINFO) && msg.hasArgs(1)){
-            console.log("Gathering vide info in frame", msg.args[0]);
-            if (typeof msg.args[0] == "number"){
-                reportVideos(msg.args[0]);
+            let vid = findVideo(url);
+            console.log(vid)
+            if (!vid){
+                return;
+            }
+
+            if (state.status == VIDEOSTATUS.PAUSE){
+                vid.pause();
+            }else if(state.status == VIDEOSTATUS.PLAY){
+                vid.play();
+            }
+            if (Math.abs(vid.currentTime - state.timestamp) > 0.3){
+                vid.currentTime = state.timestamp + 0.1;
             }
         }
+
 });
+
+const observer = new MutationObserver(mutationList => {
+    console.log("MITATION", mutationList)
+    let rescan = false;
+    for (let m of mutationList){
+        if (m.type == "attributes"){
+            rescan = true;
+            break
+        }
+        for(let i = 0; i < m.addedNodes.length; i++){
+            if(m.addedNodes[i].nodeName == "VIDEO" ){
+                rescan = true;
+            }
+            break;
+        }
+        if (rescan){
+            break;
+        }
+    }
+
+    if (rescan){
+        reportVideos();
+    }
+})
+observer.observe(document.body as unknown as Node,{
+    attributeFilter:['src'],
+    attributes: true,
+    childList:true,
+    subtree:true
+});
+reportVideos();
 
 let active = 0;
 
-function init(vidIndex:number){
-    let vid:HTMLVideoElement|null = findVideo(vidIndex);
-    if (!vid){
-        return;
-    }
+function init(vid:HTMLVideoElement){
 
     attachEvents(vid);
 
@@ -40,18 +81,6 @@ function init(vidIndex:number){
         if (msg.to != TO.TAB){
             return;
         }
-        if (msg.is(CMD.VIDEOCONTROL) && msg.hasArgs(1)){
-            let state = msg.args[0] as VideoState;
-
-            if (state.status == VIDEOSTATUS.PAUSE){
-                vid.pause();
-            }else if(state.status == VIDEOSTATUS.PLAY){
-                vid.play();
-            }
-            if (Math.abs(vid.currentTime - state.timestamp) > 0.5){
-                vid.currentTime = state.timestamp + 0.1;
-            }
-        }
     })
 }
  
@@ -62,13 +91,12 @@ function attachEvents(vid: HTMLVideoElement){
 }
 
 function onEvent(e:any){
-    if (!active){
-        return;
-    }
-
-
+    // TODO Implement real check of activity
     let state = new VideoState(VIDEOSTATUS.UNKNOWN, e.target.currentTime);
     if (e.type == "play"){
+        let startMst = new InternalMessage(TO.BACKGROND, CMD.SELECTVIDEO)
+        .addArgs(e.target.src)
+        .send()
         state.status = VIDEOSTATUS.PLAY;
     }else if (e.type == "pause"){
         state.status = VIDEOSTATUS.PAUSE;
@@ -81,33 +109,42 @@ function onEvent(e:any){
     .send()
 }
 
-function reportVideos(frameId:number) {
+function reportVideos() {
     let msg = new InternalMessage(TO.BACKGROND, CMD.VIDEOINFO);
 
     let vids = document.querySelectorAll("video");
 
+    console.log("Reporting videos")
     vids.forEach((v, i) => {
         let info:VideoInfo = {
             src : v.src,
-            height : v.height,
-            width : v.width,
-            index : i,
-            y_offset : v.offsetTop,
-            frame_id: frameId,
+            tabId:0,
+            frameId:0,
+            tabUrl:"",
+            tabIndex: i,
         };
         console.log("Reporting video", info, v);
+        init(v);
         msg.addArgs(info);
     })
+    console.log(msg.args)
     msg.send();
-
 }
 
-function findVideo(i:number) {
+let findKey = ""
+let findValue: HTMLVideoElement;
+function findVideo(url:string):HTMLVideoElement|undefined {
     let vids = document.querySelectorAll("video");
-
-
-    if(vids.length > i){
-        return vids[i]
+    if (url == findKey){
+        return findValue as HTMLVideoElement;
     }
-    return null;
+
+    for (let i = 0; i < vids.length; i++){
+        if(vids[i].src == url){
+            findKey = url;
+            findValue = vids[i];
+            return findValue;
+        }
+    }
+    return undefined;
 }

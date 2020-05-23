@@ -17,7 +17,8 @@ export enum CMD {
     UPDATE,
     VIDEOINFO,
     CREATEROOM,
-    JOINROOM
+    JOINROOM,
+    SELECTVIDEO
 }
 
 export enum VIDEOSTATUS {
@@ -28,15 +29,14 @@ export enum VIDEOSTATUS {
 
 export interface VideoInfo {
     src: string
-    width: number
-    height: number
-    y_offset: number
-    index: number
-    frame_id: number
+    tabId: number
+    frameId: number
+    tabUrl: string
+    tabIndex: number
 }
 
 type ARGS = (ARG)[]
-type ARG = string | number | VideoState | VideoInfo
+type ARG = string | number | VideoState | VideoInfo 
 
 export class VideoState {
     timestamp: number
@@ -92,7 +92,7 @@ export class InternalMessage {
     }
 
     sendTab(tabId: number, frameId?:number){
-        if (typeof frameId == typeof 1){
+        if (typeof frameId == typeof 1 && frameId! > -1){
             chrome.tabs.sendMessage(tabId, this, {frameId:frameId});
         }else{
             chrome.tabs.sendMessage(tabId, this);
@@ -123,8 +123,8 @@ export class WsMessage {
             if (x.strArg) {
                 this.strArg = x.strArg;
             }
-            if (x.intArg) {
-                this.intArg = x.sntArg;
+            if (typeof x.intArg == typeof 1) {
+                this.intArg = x.intArg;
             }
         }
     }

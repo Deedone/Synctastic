@@ -49,11 +49,14 @@ export default class App extends Vue {
   }
 
   createRoom() {
+    new InternalMessage(TO.BACKGROND, CMD.INIT).send();
     new InternalMessage(TO.BACKGROND, CMD.CREATEROOM).send();
+    new InternalMessage(TO.BACKGROND, CMD.BECOMEHOST).send();
   }
 
   joinRoom(){
     console.log("Join room")
+    new InternalMessage(TO.BACKGROND, CMD.INIT).send();
     new InternalMessage(TO.BACKGROND, CMD.JOINROOM)
     .addArgs(parseInt(this.enteredRoomId))
     .send();

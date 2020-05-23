@@ -12,6 +12,7 @@ type Room struct {
 	broadcastChan chan string
 	vidTitle      string
 	id            int
+	curVideoMsg   string
 }
 
 type RoomInfo struct {
@@ -84,6 +85,16 @@ func (r *Room) sendInfo() {
 	}
 	msg, _ := json.Marshal(m)
 	r.broadcast(string(msg), false)
+	if len(r.curVideoMsg) > 0 {
+		r.broadcast(r.curVideoMsg, true)
+	}
+}
+
+func (r *Room) changeVideo(msg string) {
+	r.curVideoMsg = msg
+	if len(r.curVideoMsg) > 0 {
+		r.broadcast(r.curVideoMsg, true)
+	}
 }
 
 func (r *Room) MarshalJSON() ([]byte, error) {
