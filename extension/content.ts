@@ -1,73 +1,101 @@
 import {InternalMessage, VideoState, VideoInfo, TO, CMD, VIDEOSTATUS} from "./internal_message"
 
-console.log("CONTENT");
-chrome.runtime.onMessage.addListener((inmsg:any) => {
-    let msg = new InternalMessage(inmsg);
-    console.log(msg);
-    if (msg.to  != TO.TAB){
-        return;
+let active = 0;
+
+chrome.storage.local.get('active', res => {
+    console.log("CONTENT", res);
+    if (typeof res.active == typeof 1){
+        active = res.active;
+    }else{
+        active = 0;
     }
-        if (msg.is(CMD.INIT) && msg.hasArgs(1) && typeof msg.args[0] == typeof 1){
-            active = 1;
-        }
-        if (msg.is(CMD.STOP)){
-            active = 0;
-        }
-        if (msg.is(CMD.VIDEOCONTROL) && msg.hasArgs(2)){
-            console.log("Got videocontrol", msg)
-            let url = msg.args[0] as string;
-            let state = msg.args[1] as VideoState;
 
-            let vid = findVideo(url);
-            console.log(vid)
-            if (!vid){
-                return;
-            }
-
-            if (state.status == VIDEOSTATUS.PAUSE){
-                vid.pause();
-            }else if(state.status == VIDEOSTATUS.PLAY){
-                vid.play();
-            }
-            if (Math.abs(vid.currentTime - state.timestamp) > 0.3){
-                vid.currentTime = state.timestamp + 0.1;
+    chrome.storage.onChanged.addListener(changes => {
+        console.log("Got storage update", changes)
+        for (let key in changes){
+            if (key == "active"){
+                active = changes[key].newValue;
+                if (active){
+                    reportVideos();
+                }else{
+                    //TODO STOP
+                }
             }
         }
+    })
 
-});
-
-const observer = new MutationObserver(mutationList => {
-    console.log("MITATION", mutationList)
-    let rescan = false;
-    for (let m of mutationList){
-        if (m.type == "attributes"){
-            rescan = true;
-            break
+    chrome.runtime.onMessage.addListener((inmsg:any) => {
+        let msg = new InternalMessage(inmsg);
+        console.log(msg);
+        if (msg.to  != TO.TAB){
+            return;
         }
-        for(let i = 0; i < m.addedNodes.length; i++){
-            if(m.addedNodes[i].nodeName == "VIDEO" ){
+            if (msg.is(CMD.VIDEOCONTROL) && msg.hasArgs(2)){
+                if (!active ){
+                    return;
+                }
+                console.log("Got videocontrol", msg)
+                let url = msg.args[0] as string;
+                let state = msg.args[1] as VideoState;
+
+                let vid = findVideo(url);
+                console.log(vid)
+                if (!vid){
+                    return;
+                }
+
+                if (state.status == VIDEOSTATUS.PAUSE){
+                    vid.pause();
+                }else if(state.status == VIDEOSTATUS.PLAY){
+                    vid.play();
+                }
+                if (Math.abs(vid.currentTime - state.timestamp) > 0.3){
+                    vid.currentTime = state.timestamp + 0.1;
+                }
+            }
+
+    });
+
+    const observer = new MutationObserver(mutationList => {
+        if (!active){
+            return;
+        }
+        console.log("MITATION", mutationList)
+        let rescan = false;
+        for (let m of mutationList){
+            if (m.type == "attributes"){
                 rescan = true;
+                break
             }
-            break;
+            for(let i = 0; i < m.addedNodes.length; i++){
+                if(m.addedNodes[i].nodeName == "VIDEO" ){
+                    rescan = true;
+                }
+                break;
+            }
+            if (rescan){
+                break;
+            }
         }
-        if (rescan){
-            break;
-        }
-    }
 
-    if (rescan){
+        if (rescan){
+            reportVideos();
+        }
+    })
+    observer.observe(document.body as unknown as Node,{
+        attributeFilter:['src'],
+        attributes: true,
+        childList:true,
+        subtree:true
+    });
+    if (active){
         reportVideos();
     }
-})
-observer.observe(document.body as unknown as Node,{
-    attributeFilter:['src'],
-    attributes: true,
-    childList:true,
-    subtree:true
-});
-reportVideos();
 
-let active = 0;
+});
+
+// End of initialization
+
 
 function init(vid:HTMLVideoElement){
 
@@ -89,24 +117,36 @@ function attachEvents(vid: HTMLVideoElement){
     vid.addEventListener("pause", onEvent);
     vid.addEventListener("timeupdate", onEvent);
 }
-
+let lastUpdate = 0;
 function onEvent(e:any){
+    if (!active){
+        return;
+    }
     // TODO Implement real check of activity
+
+    let forceSend = false;
     let state = new VideoState(VIDEOSTATUS.UNKNOWN, e.target.currentTime);
     if (e.type == "play"){
         let startMst = new InternalMessage(TO.BACKGROND, CMD.SELECTVIDEO)
         .addArgs(e.target.src)
         .send()
+        forceSend = true;
         state.status = VIDEOSTATUS.PLAY;
     }else if (e.type == "pause"){
+        forceSend = true;
         state.status = VIDEOSTATUS.PAUSE;
     }else{
         state.status = e.target.paused ? VIDEOSTATUS.PAUSE : VIDEOSTATUS.PLAY
     }
     
-    new InternalMessage(TO.BACKGROND, CMD.VIDEOSTATUS)
-    .addArgs(state)
-    .send()
+    let now = Date.now();
+
+    if (forceSend || now - lastUpdate > 1000){
+        new InternalMessage(TO.BACKGROND, CMD.VIDEOSTATUS)
+        .addArgs(state)
+        .send()
+        lastUpdate = Date.now();
+    }
 }
 
 function reportVideos() {

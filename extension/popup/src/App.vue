@@ -18,6 +18,7 @@
     <button @click="createRoom">Create room</button>
     <input type="text" v-model="enteredRoomId">
     <button @click="joinRoom">Join room</button>
+    <button @click="leaveRoom">Leave room</button>
     <div>
       Room id: {{roomId}}<br>
       Room users: {{roomUsers}}<br>
@@ -60,6 +61,11 @@ export default class App extends Vue {
     new InternalMessage(TO.BACKGROND, CMD.JOINROOM)
     .addArgs(parseInt(this.enteredRoomId))
     .send();
+  }
+
+  leaveRoom() {
+    console.log("Leave room");
+    new InternalMessage(TO.BACKGROND, CMD.KILL).send();
   }
 
   onMessage(inmsg:any):void{

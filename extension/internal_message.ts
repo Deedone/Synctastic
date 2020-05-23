@@ -9,6 +9,7 @@ export enum TO {
 
 export enum CMD {
     INIT,
+    KILL,
     FETCH,
     BECOMEHOST,
     VIDEOSTATUS,

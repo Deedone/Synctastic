@@ -6,7 +6,8 @@
     "permissions": [
         "activeTab",
         "tabs",
-         "webNavigation"
+         "webNavigation",
+         "storage"
       ],
     "background":{
         "scripts":["dist/background.js"]

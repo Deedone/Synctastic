@@ -133,6 +133,8 @@ function onWsMessage(msg:any){
             updateView();
             break;
         case "selectVideo":
+            // Disable current selection
+            serverCurrent.url = "";
             // Store server preffered video and try to select it immediately
             // this attempt also happens when new videos are reported
             serverCurrent.url = data.strArg!;
@@ -173,6 +175,18 @@ function onMessage(inmsg:any, sender?:any){
     if (msg.is(CMD.INIT)) {
         //setupWs("wss://synctastic.herokuapp.com/")
         setupWs("ws://127.0.0.1:1313")
+        chrome.storage.local.set({'active':1});
+    }
+    if (msg.is(CMD.KILL)){
+        if (ws){
+            ws.close();
+        }
+        chrome.storage.local.set({'active':0});
+        roomId = 0;
+        roomUsers = 0;
+        updateView();
+        host = 0;
+
     }
 
     if (msg.is(CMD.VIDEOINFO) && msg.hasArgs(1)){
