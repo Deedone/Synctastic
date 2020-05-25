@@ -6,6 +6,7 @@
         <i class="material-icons" id="topbar-button-icon">help_outline</i>
       </button>
     </div>
+<<<<<<< HEAD
     <div>
       Video status is {{status}} <br>
       Current timestamp is {{timestamp}}
@@ -20,6 +21,10 @@
       Room users: {{roomUsers}}<br>
     </div>
   </div> 
+=======
+    <lobby></lobby>
+  </div>
+>>>>>>> 6091f6b06a3fba4c112a4df7715e18e4689ece71
 </template>
 
 <script lang="ts">
@@ -128,6 +133,7 @@ html, body {
   /*font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;*/
+<<<<<<< HEAD
   text-align: center;
   width: 300px;
   background-color: #FEFEFE;
@@ -183,6 +189,63 @@ html, body {
   width: 120px;
   height: 35px;
   text-align: center;
+=======
+  text-align: center;
+  width: 300px;
+  background-color: #FEFEFE;
+}
+.topbar {
+  background: #046F55;
+  width: 300px;
+  height: 50px;
+  box-shadow: 0px 3px 2px #AEAEAE;
+  font-size: 26px;
+  color: #FEFEFE;
+  display: inline-block;
+  text-align: left;
+  line-height: 50px;
+  padding-left: 20px;
+  padding-right: 20px;
+  vertical-align: middle;
+}
+.topbar-button {
+  background: transparent;
+  width: 20px;
+  height: 25px;
+  border: 1px black;
+  position: absolute;
+  right: 10px;
+  top: 15px;
+  display: inline-block;
+  vertical-align: middle;
+  &:
+}
+
+.topbar-button:hover {
+  transform: scale(1.2);
+}
+
+.topbar-button:focus {
+  outline: 0;
+}
+
+#topbar-button-icon {
+  width: 20px;
+  height: 25px;
+  position: absolute;
+  right: 8px;
+  top: 0px;
+  color: white;
+}
+
+.rect-button {
+  background-color: #046F55;
+  border: none;
+  color: white;
+  width: 120px;
+  height: 35px;
+  text-align: center;
+>>>>>>> 6091f6b06a3fba4c112a4df7715e18e4689ece71
   text-decoration: none;
   display: inline-block;
   font-size: 16px;
