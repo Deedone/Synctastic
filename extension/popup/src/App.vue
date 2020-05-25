@@ -1,7 +1,7 @@
 <template>
-  <div id="app">
+  <div id="app" style="height: 400px;">
     <div class="topbar">
-      {{topbarTitle}}
+      {{topbarTitle[state+"_title"]}}
       <button class="topbar-button">
         <i class="material-icons" id="topbar-button-icon">help_outline</i>
       </button>
@@ -26,13 +26,15 @@
 import Vue from 'vue';
 import Component from 'vue-class-component';
 import start from './components/start.vue';
+import lobby from './components/lobby.vue';
 
 import {InternalMessage, VideoState, TO, CMD, VIDEOSTATUS} from "../../internal_message";
 
 @Component({
   name: 'App',
   components: {
-    start
+    start,
+    lobby
   }
 })
 
@@ -46,11 +48,11 @@ export default class App extends Vue {
   roomUsers = 0;
   enteredRoomId = "";
 
-  /*Props stuff?*/
-  state = "Start"
-  topbarTitle = "Welcome"
-  topbarButtonAction=
-
+  state = "lobby"
+  topbarTitle = {
+    start_title : "Getting started",
+    lobby_title : "Welcome",
+  };
 
   beforeMount(){
     console.log("taki before mount");
@@ -112,24 +114,22 @@ export default class App extends Vue {
   setHost(){
     new InternalMessage(TO.BACKGROND, CMD.BECOMEHOST).send()
   }
-
-
 }
 </script>
 
 <style lang="css">
 html, body {
+  font-family: 'Roboto', sans-serif;
   margin: 0px;
   padding: 0px;
   border: none;
 }
 #app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
+  /*font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  -moz-osx-font-smoothing: grayscale;*/
   text-align: center;
   width: 300px;
-  height: 400px;
   background-color: #FEFEFE;
 }
 .topbar {
@@ -174,5 +174,27 @@ html, body {
   right: 8px;
   top: 0px;
   color: white;
+}
+
+.rect-button {
+  background-color: #046F55;
+  border: none;
+  color: white;
+  width: 120px;
+  height: 35px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.rect-button:hover {
+  background-color: #015F48;
+  box-shadow: 0px 3px 2px #AEAEAE;
+}
+
+.rect-button:focus {
+  outline: 0;
 }
 </style>
