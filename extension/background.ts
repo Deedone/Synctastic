@@ -109,6 +109,9 @@ function trySelectVideo(){
 }
 
 function onWsMessage(msg:any){
+    if (ws.readyState != ws.OPEN){
+        return;
+    }
     state.netstatus = "Online"
     if (watchdog > -1){
         clearTimeout(watchdog)
