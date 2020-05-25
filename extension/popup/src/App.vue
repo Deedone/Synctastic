@@ -1,51 +1,70 @@
 <template>
   <div id="app" style="height: 400px;">
     <div class="topbar">
-      {{topbarTitle[state+"_title"]}}
+      {{topbarTitle[state.stage]}}
       <button class="topbar-button">
         <i class="material-icons" id="topbar-button-icon">help_outline</i>
       </button>
     </div>
-    <lobby></lobby>
+    <lobby v-if="debug != 1 && state.stage == 'lobby'"></lobby>
+    <Debug v-if="debug == 1" :state="state"></Debug>
   </div>
 </template>
 
 <script lang="ts">
 import Vue from 'vue';
 import Component from 'vue-class-component';
+import Debug from "./components/debug.vue"
 import start from './components/start.vue';
 import lobby from './components/lobby.vue';
 
 import {InternalMessage, VideoState, TO, CMD, VIDEOSTATUS} from "../../internal_message";
 
+
 @Component({
   name: 'App',
   components: {
     start,
-    lobby
+    lobby,
+    Debug
   }
 })
 
 export default class App extends Vue {
   name = 'App';
-  status ="unknown";
-  timestamp = 0;
-  tab = "";
-  netstatus = "";
-  roomId = 0;
-  roomUsers = 0;
-  enteredRoomId = "";
-
-  state = "lobby"
+  state = {
+    status :"unknown",
+    timestamp : 0,
+    netstatus : "",
+    roomId : 0,
+    roomUsers : 0,
+    stage : "lobby"
+  }
+  debug = 1
   topbarTitle = {
-    start_title : "Getting started",
-    lobby_title : "Welcome",
-  };
+    "lobby": "Wellcome",
+    "name_enter": "Getting started"
+  }
 
   beforeMount(){
     console.log("taki before mount");
     chrome.runtime.onMessage.addListener((m) => this.onMessage(m));
-    new InternalMessage(TO.BACKGROND, CMD.FETCH).send();
+    //Load state from shared storage
+    chrome.storage.local.get("state", resp => {
+      if (typeof resp.state == typeof {}){
+        this.state = resp.state;
+      }
+    })
+
+    chrome.storage.onChanged.addListener(changes => {
+      console.log("Got state update")
+      for (let key in changes){
+        if (key == "state"){
+          console.log("State key correct")
+          this.state = changes[key].newValue;
+        }
+      }
+    });
   }
 
   createRoom() {
@@ -58,7 +77,7 @@ export default class App extends Vue {
     console.log("Join room")
     new InternalMessage(TO.BACKGROND, CMD.INIT).send();
     new InternalMessage(TO.BACKGROND, CMD.JOINROOM)
-    .addArgs(parseInt(this.enteredRoomId))
+    .addArgs(1)
     .send();
   }
 
@@ -74,14 +93,6 @@ export default class App extends Vue {
       return;
     }
 
-    if (msg.is(CMD.UPDATE) && msg.hasArgs(4)){
-      this.status = msg.args[0] as string;
-      this.timestamp = msg.args[1] as number;
-      this.tab = msg.args[2] as string;
-      this.netstatus = msg.args[3] as string;
-      this.roomId = msg.args[4] as number
-      this.roomUsers = msg.args[5] as number
-    }
   }
   initOnTab(){
     console.log("Button pressed")

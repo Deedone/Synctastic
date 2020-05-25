@@ -13,6 +13,13 @@ import Component from 'vue-class-component';
   name: 'lobby'
 })
 export default class start extends Vue {
+  createRoom(){
+
+  }
+
+  joinRoom(){
+
+  }
 }
 </script>
 

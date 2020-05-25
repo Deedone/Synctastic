@@ -4,12 +4,9 @@ import {InternalMessage, VideoInfo, WsMessage, VideoState, TO, CMD, VIDEOSTATUS}
 chrome.runtime.onMessage.addListener(onMessage);
 let vidstate:VideoState|undefined;
 let curTabName:string = "";
-let netstatus = "offline"
 let watchdog = -1;
 let host = 0;
 let ws:WebSocket;
-let roomId = 0;
-let roomUsers = 0;
 let videos: VideoInfo[] = [];
 let curVideo: VideoInfo|undefined;
 let serverCurrent = {
@@ -17,6 +14,14 @@ let serverCurrent = {
     tabIndex: 0
 }
 
+let state = {
+    status :"unknown",
+    timestamp : 0,
+    netstatus : "",
+    roomId : 0,
+    roomUsers : 0,
+    stage : "lobby"
+}
 
 chrome.tabs.onRemoved.addListener(tabId => {
     console.log("On tab closed", tabId);
@@ -84,9 +89,8 @@ function updateView(){
     if (!vidstate){
         vidstate = new VideoState(VIDEOSTATUS.UNKNOWN, 0);
     }
-    new InternalMessage(TO.POPUP, CMD.UPDATE)
-    .addArgs([vidstate.status, vidstate.timestamp, curTabName, netstatus, roomId, roomUsers])
-    .send();
+
+    chrome.storage.local.set({state:state});
 
 }
 
@@ -105,12 +109,12 @@ function trySelectVideo(){
 }
 
 function onWsMessage(msg:any){
-    netstatus = "Online"
+    state.netstatus = "Online"
     if (watchdog > -1){
         clearTimeout(watchdog)
     }
     watchdog = setTimeout(() => {
-        netstatus = "Offline";
+        state.netstatus = "Offline";
     }, 11000)
 
 
@@ -128,8 +132,8 @@ function onWsMessage(msg:any){
                 break
             }
             let info = JSON.parse(data.strArg);
-            roomId = info.id;
-            roomUsers = info.numClients;
+            state.roomId = info.id;
+            state.roomUsers = info.numClients;
             updateView();
             break;
         case "selectVideo":
@@ -182,8 +186,8 @@ function onMessage(inmsg:any, sender?:any){
             ws.close();
         }
         chrome.storage.local.set({'active':0});
-        roomId = 0;
-        roomUsers = 0;
+        state.roomId = 0;
+        state.roomUsers = 0;
         updateView();
         host = 0;
 
