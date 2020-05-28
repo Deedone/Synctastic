@@ -10,7 +10,16 @@
       <div v-if="!debug">
         <NameSelect v-if="state.stage == 'name'"
          @nameChanged="changeName" ></NameSelect>
-        <Lobby v-if="state.stage == 'lobby'"></Lobby>
+        <Lobby v-if="state.stage == 'lobby'"
+          @setStage="setStage"
+          @createRoom="createRoom"
+        ></Lobby>
+        <JoinRoom v-if="state.stage == 'join'"
+         @joinRoom="joinRoom"></JoinRoom>
+         <Room v-if="state.stage == 'room'"
+                :state="state"
+                @leaveRoom="leaveRoom"
+         ></Room>
       </div>
       <Debug v-else :state="state"></Debug>
   </div>
@@ -23,6 +32,8 @@ import Debug from "./components/debug.vue"
 import start from './components/start.vue';
 import Lobby from './components/lobby.vue';
 import NameSelect from './components/NameSelect.vue';
+import JoinRoom from './components/JoinRoom.vue';
+import Room from './components/Room.vue';
 
 import {InternalMessage, VideoState, TO, CMD, VIDEOSTATUS} from "../../internal_message";
 
@@ -33,7 +44,9 @@ import {InternalMessage, VideoState, TO, CMD, VIDEOSTATUS} from "../../internal_
     start,
     Lobby,
     Debug,
-    NameSelect
+    NameSelect,
+    JoinRoom,
+    Room
   }
 })
 
@@ -45,13 +58,15 @@ export default class App extends Vue {
     netstatus : "",
     roomId : 0,
     roomUsers : 0,
-    stage : "lobby",
+    stage : "name",
     name: "",
   }
   debug = false
   topbarTitle = {
+    "name": "Getting started",
     "lobby": "Wellcome",
-    "name": "Getting started"
+    "join": "Enter room id",
+    "room": "In room",
   }
 
   toggleDebug(){
@@ -69,6 +84,12 @@ export default class App extends Vue {
     new InternalMessage(TO.BACKGROND, CMD.SETNAME)
     .addArgs(name)
     .send();
+  }
+
+  setStage(stage:string){
+    if (stage == "join"){
+      this.state.stage = stage;
+    }
   }
 
 
@@ -97,23 +118,29 @@ export default class App extends Vue {
   }
 
   processInitialData(){
-      if (!this.isValidName(this.state.name)){
-        this.state.stage = "name";
-      }
+    console.log("Got name from state", this.state.name)
+    if (!this.isValidName(this.state.name)){
+      this.state.stage = "name";
+    }
 
   }
 
   createRoom() {
+    console.log("Create Room");
     new InternalMessage(TO.BACKGROND, CMD.INIT).send();
     new InternalMessage(TO.BACKGROND, CMD.CREATEROOM).send();
     new InternalMessage(TO.BACKGROND, CMD.BECOMEHOST).send();
   }
 
-  joinRoom(){
+  joinRoom(id:string|number){
     console.log("Join room")
+    if (isNaN(id as number)){
+      console.log("Invalid ID");
+      return;
+    }
     new InternalMessage(TO.BACKGROND, CMD.INIT).send();
     new InternalMessage(TO.BACKGROND, CMD.JOINROOM)
-    .addArgs(1)
+    .addArgs(parseInt(id as string))
     .send();
   }
 
@@ -129,18 +156,6 @@ export default class App extends Vue {
       return;
     }
 
-  }
-  vidControl(cmd:string){
-    if (cmd == "play") {
-      new InternalMessage(TO.BACKGROND, CMD.VIDEOCONTROL)
-      .addArgs(new VideoState(VIDEOSTATUS.PLAY,0))
-      .send();
-    }
-    if (cmd == "pause") {
-      new InternalMessage(TO.BACKGROND, CMD.VIDEOCONTROL)
-      .addArgs(new VideoState(VIDEOSTATUS.PAUSE,0))
-      .send();
-    }
   }
   setHost(){
     new InternalMessage(TO.BACKGROND, CMD.BECOMEHOST).send()

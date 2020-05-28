@@ -16,6 +16,7 @@ let state = {
     netstatus : "",
     roomId : 0,
     roomUsers : 0,
+    roomNames: [],
     stage : "name",
     serverCurrent : {
         name: "",
@@ -24,6 +25,9 @@ let state = {
     },
     name: "",
 }
+
+//TODO recover name
+chrome.storage.local.set({'active':0, 'state':state});
 
 chrome.tabs.onRemoved.addListener(tabId => {
     console.log("On tab closed", tabId);
@@ -34,6 +38,7 @@ chrome.tabs.onRemoved.addListener(tabId => {
 
 chrome.webNavigation.onBeforeNavigate.addListener(details => {
     console.log("OnBeforeNavigate", details);
+    //Clear videos from navigating tab
     videos = videos.filter(vid => vid.tabId != details.tabId || (details.frameId != 0 && details.frameId != vid.frameId));
     console.log("Vids are", videos);
 });
@@ -80,34 +85,43 @@ function setActive(tab:number){
     updateView();
 }
 
-function selectVideo(vid:VideoInfo){
-    console.log("Selecting video", vid);
-    curVideo = vid;
-    setActive(vid.tabId);
-    //TODO send network updates if host
-}
 
 function updateView(){
     if (!vidstate){
         vidstate = new VideoState(VIDEOSTATUS.UNKNOWN, 0);
     }
-
     chrome.storage.local.set({state:state});
-
 }
 
 function trySelectVideo(){
     if (state.serverCurrent.url == ""){
+        curVideo = undefined;
         return;
     }
-
+    if (curVideo && curVideo.tabUrl == state.serverCurrent.url && curVideo.tabIndex == state.serverCurrent.tabIndex){
+        //Already selected
+        return;
+    }
+    let found = false;
     videos.forEach(v => {
         if(v.tabUrl == state.serverCurrent.url && v.tabIndex == state.serverCurrent.tabIndex){
-            if (curVideo && curVideo.src != v.src){
+            if (!curVideo || curVideo.src != v.src){
+                found = true;
                 selectVideo(v);
             }
         }
     })
+    if (!found) {
+        // We didn't found matching video so ensure that nothing is selected
+        curVideo = undefined;
+    }
+}
+
+function selectVideo(vid:VideoInfo){
+    console.log("Selecting video", vid);
+    curVideo = vid;
+    setActive(vid.tabId);
+    //TODO send network updates if host
 }
 
 function onWsMessage(msg:any){
@@ -139,6 +153,8 @@ function onWsMessage(msg:any){
             let info = JSON.parse(data.strArg);
             state.roomId = info.id;
             state.roomUsers = info.numClients;
+            state.roomNames = info.clients;
+            state.stage = "room";
             updateView();
             break;
         case "selectVideo":
@@ -166,6 +182,9 @@ function sendCurVideo(){
     if (!curVideo){
         return;
     }
+    state.serverCurrent.name = "Vidos";
+    state.serverCurrent.tabIndex = curVideo.tabIndex;
+    state.serverCurrent.url = curVideo.tabUrl;
     let wsmsg = new WsMessage()
     wsmsg.cmd = "selectVideo";
     wsmsg.strArg = JSON.stringify(state.serverCurrent);
@@ -198,6 +217,7 @@ function onMessage(inmsg:any, sender?:any){
         chrome.storage.local.set({'active':0});
         state.roomId = 0;
         state.roomUsers = 0;
+        state.stage = "lobby";
         updateView();
         host = 0;
 

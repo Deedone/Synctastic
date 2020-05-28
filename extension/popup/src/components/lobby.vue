@@ -13,12 +13,14 @@ import Component from 'vue-class-component';
   name: 'lobby'
 })
 export default class start extends Vue {
-  createRoom(){
 
+  createRoom(){
+    console.log("Create room inner")
+    this.$emit("createRoom");
   }
 
   joinRoom(){
-
+    this.$emit("setStage", "join")
   }
 }
 </script>
