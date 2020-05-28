@@ -19,7 +19,8 @@ export enum CMD {
     VIDEOINFO,
     CREATEROOM,
     JOINROOM,
-    SELECTVIDEO
+    SELECTVIDEO,
+    SETNAME
 }
 
 export enum VIDEOSTATUS {

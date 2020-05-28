@@ -22,6 +22,8 @@
       Room id: {{state.roomId}}<br>
       Room users: {{state.roomUsers}}<br>
     </div>
+    <div>Name : {{state.name}}</div>
+    <button @click="clearName">Clear name</button>
   </div> 
 </template>
 
@@ -48,6 +50,12 @@ export default class Debug extends DebugProps {
     console.log("taki before mount");
     chrome.runtime.onMessage.addListener((m) => this.onMessage(m));
     new InternalMessage(TO.BACKGROND, CMD.FETCH).send();
+  }
+
+  clearName(){
+    new InternalMessage(TO.BACKGROND, CMD.SETNAME)
+    .addArgs("")
+    .send()
   }
   createRoom() {
     new InternalMessage(TO.BACKGROND, CMD.INIT).send();

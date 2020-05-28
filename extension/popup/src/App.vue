@@ -2,12 +2,17 @@
   <div id="app" style="height: 400px;">
     <div class="topbar">
       {{topbarTitle[state.stage]}}
-      <button class="topbar-button">
+      <button class="topbar-button" @click="toggleDebug">
         <i class="material-icons" id="topbar-button-icon">help_outline</i>
+        D
       </button>
     </div>
-    <lobby v-if="debug != 1 && state.stage == 'lobby'"></lobby>
-    <Debug v-if="debug == 1" :state="state"></Debug>
+      <div v-if="!debug">
+        <NameSelect v-if="state.stage == 'name'"
+         @nameChanged="changeName" ></NameSelect>
+        <Lobby v-if="state.stage == 'lobby'"></Lobby>
+      </div>
+      <Debug v-else :state="state"></Debug>
   </div>
 </template>
 
@@ -16,7 +21,8 @@ import Vue from 'vue';
 import Component from 'vue-class-component';
 import Debug from "./components/debug.vue"
 import start from './components/start.vue';
-import lobby from './components/lobby.vue';
+import Lobby from './components/lobby.vue';
+import NameSelect from './components/NameSelect.vue';
 
 import {InternalMessage, VideoState, TO, CMD, VIDEOSTATUS} from "../../internal_message";
 
@@ -25,8 +31,9 @@ import {InternalMessage, VideoState, TO, CMD, VIDEOSTATUS} from "../../internal_
   name: 'App',
   components: {
     start,
-    lobby,
-    Debug
+    Lobby,
+    Debug,
+    NameSelect
   }
 })
 
@@ -38,13 +45,32 @@ export default class App extends Vue {
     netstatus : "",
     roomId : 0,
     roomUsers : 0,
-    stage : "lobby"
+    stage : "lobby",
+    name: "",
   }
-  debug = 1
+  debug = false
   topbarTitle = {
     "lobby": "Wellcome",
-    "name_enter": "Getting started"
+    "name": "Getting started"
   }
+
+  toggleDebug(){
+    this.debug = !this.debug;
+  }
+
+  isValidName(name:string):boolean{
+    return typeof name == typeof "" && name.length > 3;
+  }
+  changeName(name:string){
+    console.log(name);
+    if (!this.isValidName(name)){
+      return;
+    }
+    new InternalMessage(TO.BACKGROND, CMD.SETNAME)
+    .addArgs(name)
+    .send();
+  }
+
 
   beforeMount(){
     console.log("taki before mount");
@@ -53,6 +79,7 @@ export default class App extends Vue {
     chrome.storage.local.get("state", resp => {
       if (typeof resp.state == typeof {}){
         this.state = resp.state;
+        this.processInitialData();
       }
     })
 
@@ -62,9 +89,18 @@ export default class App extends Vue {
         if (key == "state"){
           console.log("State key correct")
           this.state = changes[key].newValue;
+          this.processInitialData();
         }
       }
     });
+
+  }
+
+  processInitialData(){
+      if (!this.isValidName(this.state.name)){
+        this.state.stage = "name";
+      }
+
   }
 
   createRoom() {
@@ -93,10 +129,6 @@ export default class App extends Vue {
       return;
     }
 
-  }
-  initOnTab(){
-    console.log("Button pressed")
-    new InternalMessage(TO.BACKGROND, CMD.INIT).send()
   }
   vidControl(cmd:string){
     if (cmd == "play") {

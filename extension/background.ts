@@ -9,10 +9,6 @@ let host = 0;
 let ws:WebSocket;
 let videos: VideoInfo[] = [];
 let curVideo: VideoInfo|undefined;
-let serverCurrent = {
-    url : "",
-    tabIndex: 0
-}
 
 let state = {
     status :"unknown",
@@ -20,7 +16,13 @@ let state = {
     netstatus : "",
     roomId : 0,
     roomUsers : 0,
-    stage : "lobby"
+    stage : "name",
+    serverCurrent : {
+        name: "",
+        url : "",
+        tabIndex: 0
+    },
+    name: "",
 }
 
 chrome.tabs.onRemoved.addListener(tabId => {
@@ -95,12 +97,12 @@ function updateView(){
 }
 
 function trySelectVideo(){
-    if (serverCurrent.url == ""){
+    if (state.serverCurrent.url == ""){
         return;
     }
 
     videos.forEach(v => {
-        if(v.tabUrl == serverCurrent.url && v.tabIndex == serverCurrent.tabIndex){
+        if(v.tabUrl == state.serverCurrent.url && v.tabIndex == state.serverCurrent.tabIndex){
             if (curVideo && curVideo.src != v.src){
                 selectVideo(v);
             }
@@ -141,12 +143,12 @@ function onWsMessage(msg:any){
             break;
         case "selectVideo":
             // Disable current selection
-            serverCurrent.url = "";
+            state.serverCurrent.url = "";
             // Store server preffered video and try to select it immediately
             // this attempt also happens when new videos are reported
-            serverCurrent.url = data.strArg!;
-            serverCurrent.tabIndex = data.intArg!;
+            state.serverCurrent = JSON.parse(data.strArg!);
             trySelectVideo();
+            updateView();
             break;
         case "broadcast":
             if (data.strArg){
@@ -166,8 +168,7 @@ function sendCurVideo(){
     }
     let wsmsg = new WsMessage()
     wsmsg.cmd = "selectVideo";
-    wsmsg.strArg = curVideo.tabUrl;
-    wsmsg.intArg = curVideo.tabIndex;
+    wsmsg.strArg = JSON.stringify(state.serverCurrent);
     ws.send(wsmsg.json());
 }
 
@@ -182,6 +183,12 @@ function onMessage(inmsg:any, sender?:any){
     if (msg.is(CMD.INIT)) {
         //setupWs("wss://synctastic.herokuapp.com/")
         setupWs("ws://127.0.0.1:1313")
+        awaitSocket(() => {
+            let msg = new WsMessage();
+            msg.cmd = "setName";
+            msg.strArg = state.name;
+            ws.send(msg.json());
+        })
         chrome.storage.local.set({'active':1});
     }
     if (msg.is(CMD.KILL)){
@@ -274,5 +281,12 @@ function onMessage(inmsg:any, sender?:any){
             .addArgs(msg.args[0])
             .sendTab(curVideo.tabId, curVideo.frameId);
         }
+    }
+    if (msg.is(CMD.SETNAME) && msg.hasArgs(1)){
+        state.name = msg.args[0] as string;
+        if (state.stage == "name"){
+            state.stage = "lobby";
+        }
+        updateView();
     }
 }
