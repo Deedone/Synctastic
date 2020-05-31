@@ -1,4 +1,5 @@
-# Synctastic
+![logo](./logo.jpg)
+===
 
 Complete solution to sync videos between browsers.
 Includes server and a browser plugin.
