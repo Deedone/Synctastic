@@ -48,6 +48,7 @@ export default class Debug extends DebugProps {
   enteredRoomId = "";
   beforeMount(){
     console.log("taki before mount");
+    console.log(this.state);
     chrome.runtime.onMessage.addListener((m) => this.onMessage(m));
     new InternalMessage(TO.BACKGROND, CMD.FETCH).send();
   }

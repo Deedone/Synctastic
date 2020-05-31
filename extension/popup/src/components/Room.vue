@@ -6,6 +6,11 @@
     <div>
       <p v-for="name in state.roomNames" :key="name"> {{name}} </p>
     </div>
+    <div>
+      <h2>Now playing</h2><br>
+      {{state.serverCurrent.name}}
+
+    </div>
   </div>
 </template>
 
