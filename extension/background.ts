@@ -1,8 +1,8 @@
 import {InternalMessage, VideoInfo, WsMessage, VideoState, TO, CMD, VIDEOSTATUS} from "./internal_message"
 
+//Remove vieo if it's mutated
 
 chrome.runtime.onMessage.addListener(onMessage);
-let vidstate:VideoState|undefined;
 let curTabName:string = "";
 let watchdog = -1;
 let host = 0;
@@ -11,8 +11,6 @@ let videos: VideoInfo[] = [];
 let curVideo: VideoInfo|undefined;
 
 let state = {
-    status :"unknown",
-    timestamp : 0,
     netstatus : "",
     roomId : 0,
     roomUsers : 0,
@@ -24,10 +22,15 @@ let state = {
         tabIndex: 0
     },
     name: "",
+    vidstate: new VideoState("unknown",0)
 }
 
-//TODO recover name
-chrome.storage.local.set({'active':0, 'state':state});
+//Init state
+chrome.storage.local.get('state', (items) => {
+    state.name = items?.state?.name || "";
+
+    chrome.storage.local.set({'active':0, 'state':state});
+})
 
 chrome.tabs.onRemoved.addListener(tabId => {
     console.log("On tab closed", tabId);
@@ -75,11 +78,9 @@ function awaitSocket(f:Function) {
 }
 
 function setActive(tab:number){
-    if (!vidstate){
-        vidstate = new VideoState(VIDEOSTATUS.UNKNOWN, 0);
+    if (!state.vidstate){
+        state.vidstate = new VideoState(VIDEOSTATUS.UNKNOWN, 0);
     }
-    //TODO gracefully detect tab closing
-    //TODO check that urls match
     curTabName = tab as unknown as string;
 
     updateView();
@@ -87,9 +88,6 @@ function setActive(tab:number){
 
 
 function updateView(){
-    if (!vidstate){
-        vidstate = new VideoState(VIDEOSTATUS.UNKNOWN, 0);
-    }
     chrome.storage.local.set({state:state});
 }
 
@@ -121,7 +119,6 @@ function selectVideo(vid:VideoInfo){
     console.log("Selecting video", vid);
     curVideo = vid;
     setActive(vid.tabId);
-    //TODO send network updates if host
 }
 
 function onWsMessage(msg:any){
@@ -177,18 +174,21 @@ function onWsMessage(msg:any){
     updateView();
 }
 
-function sendCurVideo(){
-    console.log("CUR VIDE IS", curVideo)
-    if (!curVideo){
+function sendVideo(video:VideoInfo){
+    
+    if (!curVideo || !host){
         return;
     }
-    state.serverCurrent.name = "Vidos";
-    state.serverCurrent.tabIndex = curVideo.tabIndex;
-    state.serverCurrent.url = curVideo.tabUrl;
-    let wsmsg = new WsMessage()
-    wsmsg.cmd = "selectVideo";
-    wsmsg.strArg = JSON.stringify(state.serverCurrent);
-    ws.send(wsmsg.json());
+    console.log("Sending video to server", video)
+    chrome.tabs.get(curVideo.tabId, tab => {
+        state.serverCurrent.name = tab?.title || "Video";
+        state.serverCurrent.tabIndex = video.tabIndex;
+        state.serverCurrent.url = video.tabUrl;
+        let wsmsg = new WsMessage();
+        wsmsg.cmd = "selectVideo";
+        wsmsg.strArg = JSON.stringify(state.serverCurrent);
+        ws.send(wsmsg.json());
+    });
 }
 
 function onMessage(inmsg:any, sender?:any){
@@ -200,8 +200,8 @@ function onMessage(inmsg:any, sender?:any){
 
     console.log("Got msg", msg)
     if (msg.is(CMD.INIT)) {
-        //setupWs("wss://synctastic.herokuapp.com/")
-        setupWs("ws://127.0.0.1:1313")
+        setupWs("wss://synctastic.herokuapp.com/")
+        //setupWs("ws://127.0.0.1:1313")
         awaitSocket(() => {
             let msg = new WsMessage();
             msg.cmd = "setName";
@@ -253,13 +253,15 @@ function onMessage(inmsg:any, sender?:any){
             m.cmd = "setHost";
             m.intArg = 1;
             ws.send(JSON.stringify(m));
-            sendCurVideo();
+            if (curVideo){
+                sendVideo(curVideo);
+            }
         });
     }
     if (msg.is(CMD.VIDEOSTATUS) && msg.hasArgs(1)){
-        vidstate = new VideoState(msg.args[0]);
+        state.vidstate = new VideoState(msg.args[0]);
         if (host){
-            ws.send(vidstate.broadcast())
+            ws.send(state.vidstate.broadcast())
         }
         updateView()
     }
@@ -273,7 +275,7 @@ function onMessage(inmsg:any, sender?:any){
             }
         }
         if (curVideo && host){
-            sendCurVideo()
+            sendVideo(curVideo);
         }
 
     }

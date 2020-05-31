@@ -10,8 +10,8 @@
       <button @click="vidControl('pause')">Pause</button>
     </div>
     <div>
-      Video status is {{state.status}} <br>
-      Current timestamp is {{state.timestamp}}
+      Video status is {{state.vidstate.status}} <br>
+      Current timestamp is {{state.vidstate.timestamp}}
     </div>
 
     <button @click="createRoom">Create room</button>
