@@ -202,7 +202,6 @@ html, body {
   top: 15px;
   display: inline-block;
   vertical-align: middle;
-  &:
 }
 
 .topbar-button:hover {
@@ -242,5 +241,27 @@ html, body {
 
 .rect-button:focus {
   outline: 0;
+}
+
+.generic-text {
+width: 194px;
+height: 30px;
+margin: 5px;
+
+font-family: Roboto;
+font-style: normal;
+font-weight: normal;
+font-size: 24px;
+line-height: 30px;
+
+/* or 125% */
+
+color: #000000;
+}
+
+.input {
+  
+width: 216px;
+height: 35px;
 }
 </style>

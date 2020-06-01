@@ -1,8 +1,8 @@
 <template>
   <div style="padding-top: 25px;">
-    <p>Enter your name</p><br>
-    <input type="text" placeholder="John Doe" v-model="enteredName">
-    <button @click="enter">Enter</button>
+    <p class="generic-text">Enter your name</p><br>
+    <input class="input" type="text" placeholder="John Doe" v-model="enteredName">
+    <button class="rect-button" @click="enter">Enter</button>
   </div>
 </template>
 

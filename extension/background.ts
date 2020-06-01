@@ -46,6 +46,7 @@ chrome.webNavigation.onBeforeNavigate.addListener(details => {
     console.log("Vids are", videos);
 });
 
+
 function setupWs(addr:string){
     ws = new WebSocket(addr);
     ws.onmessage = onWsMessage
@@ -200,8 +201,8 @@ function onMessage(inmsg:any, sender?:any){
 
     console.log("Got msg", msg)
     if (msg.is(CMD.INIT)) {
-        setupWs("wss://synctastic.herokuapp.com/")
-        //setupWs("ws://127.0.0.1:1313")
+        //setupWs("wss://synctastic.herokuapp.com/")
+        setupWs("ws://127.0.0.1:1313")
         awaitSocket(() => {
             let msg = new WsMessage();
             msg.cmd = "setName";
@@ -241,6 +242,22 @@ function onMessage(inmsg:any, sender?:any){
             videos.push(video);
         })
         trySelectVideo();
+    }
+
+    if (msg.is(CMD.CLEARVIDEOS)){
+        console.log("Got clearvideos");
+        if (!sender || !sender.tab || !isValidId(sender.frameId)){
+            return;
+        }
+
+        videos = videos.filter(video => {
+            return video.frameId != sender.frameId || video.tabId != sender.tabId;
+        })
+
+        if (curVideo && curVideo.frameId == sender.frameId && curVideo.tabId == sender.tabId){
+            curVideo = undefined;
+        }
+
     }
 
     if (msg.is(CMD.FETCH)){

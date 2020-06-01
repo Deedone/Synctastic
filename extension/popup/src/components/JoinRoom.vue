@@ -1,8 +1,8 @@
 <template>
   <div style="padding-top: 25px;">
-    <p>Room ID:</p><br>
-    <input type="text" placeholder="0000" v-model="enteredId">
-    <button @click="enter">Enter</button>
+    <p class="generic-text">Room ID:</p>
+    <input type="text" class="input" placeholder="0000" v-model="enteredId">
+    <button class="rect-button" @click="enter">Enter</button>
   </div>
 </template>
 

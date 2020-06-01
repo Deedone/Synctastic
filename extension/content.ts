@@ -17,8 +17,6 @@ chrome.storage.local.get('active', res => {
                 active = changes[key].newValue;
                 if (active){
                     reportVideos();
-                }else{
-                    //TODO STOP
                 }
             }
         }
@@ -30,29 +28,29 @@ chrome.storage.local.get('active', res => {
         if (msg.to  != TO.TAB){
             return;
         }
-            if (msg.is(CMD.VIDEOCONTROL) && msg.hasArgs(2)){
-                if (!active ){
-                    return;
-                }
-                console.log("Got videocontrol", msg)
-                let url = msg.args[0] as string;
-                let state = msg.args[1] as VideoState;
-
-                let vid = findVideo(url);
-                console.log(vid)
-                if (!vid){
-                    return;
-                }
-
-                if (state.status == VIDEOSTATUS.PAUSE){
-                    vid.pause();
-                }else if(state.status == VIDEOSTATUS.PLAY){
-                    vid.play();
-                }
-                if (Math.abs(vid.currentTime - state.timestamp) > 0.3){
-                    vid.currentTime = state.timestamp + 0.1;
-                }
+        if (msg.is(CMD.VIDEOCONTROL) && msg.hasArgs(2)){
+            if (!active ){
+                return;
             }
+            console.log("Got videocontrol", msg)
+            let url = msg.args[0] as string;
+            let state = msg.args[1] as VideoState;
+
+            let vid = findVideo(url);
+            console.log(vid)
+            if (!vid){
+                return;
+            }
+
+            if (state.status == VIDEOSTATUS.PAUSE){
+                vid.pause();
+            }else if(state.status == VIDEOSTATUS.PLAY){
+                vid.play();
+            }
+            if (Math.abs(vid.currentTime - state.timestamp) > 0.3){
+                vid.currentTime = state.timestamp + 0.1;
+            }
+        }
 
     });
 
@@ -150,6 +148,8 @@ function onEvent(e:any){
 }
 
 function reportVideos() {
+    new InternalMessage(TO.BACKGROND, CMD.CLEARVIDEOS)
+    .send();
     let msg = new InternalMessage(TO.BACKGROND, CMD.VIDEOINFO);
 
     let vids = document.querySelectorAll("video");

@@ -5,6 +5,8 @@ Complete solution to sync videos between browsers.
 Includes server and a browser plugin.
 Inspired by SyncTube, but designed to work on all websites that use HTML5 video.
 
+### Demo
+![demo](./demo.gif)
 
 # Dependencies
 * go
