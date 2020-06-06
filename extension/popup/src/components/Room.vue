@@ -31,7 +31,7 @@ export default class Room extends RoomProps {
     this.$emit("leaveRoom")
   }
 
-  isMe(name){
+  isMe(name:string){
     return name == this.state.name;
   }
 

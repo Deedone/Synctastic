@@ -24,6 +24,17 @@ let state = {
     name: "",
     vidstate: new VideoState("unknown",0)
 }
+const URL = "wss://synctastic.herokuapp.com/";
+//const URL = "ws://127.0.0.1:1313";
+//Keep server alive
+setInterval(() => {
+    if (!host){
+        return;
+    }
+    let xmlHttp = new XMLHttpRequest();
+    xmlHttp.open("GET",URL);
+    xmlHttp.send(null);
+} ,1000 * 60 * 20) //20 minutes
 
 //Init state
 chrome.storage.local.get('state', (items) => {
@@ -208,8 +219,7 @@ function onMessage(inmsg:any, sender?:any){
 
     console.log("Got msg", msg)
     if (msg.is(CMD.INIT)) {
-        setupWs("wss://synctastic.herokuapp.com/")
-        //setupWs("ws://127.0.0.1:1313")
+        setupWs(URL)
         awaitSocket(() => {
             let msg = new WsMessage();
             msg.cmd = "setName";
