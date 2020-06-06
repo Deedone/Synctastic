@@ -35,6 +35,9 @@ chrome.storage.local.get('state', (items) => {
 chrome.tabs.onRemoved.addListener(tabId => {
     console.log("On tab closed", tabId);
     videos = videos.filter(vid => vid.tabId != tabId);
+    if (curVideo && curVideo.tabId == tabId){
+        curVideo = undefined;
+    }
     console.log("Vids are", videos);
 
 });
@@ -43,6 +46,9 @@ chrome.webNavigation.onBeforeNavigate.addListener(details => {
     console.log("OnBeforeNavigate", details);
     //Clear videos from navigating tab
     videos = videos.filter(vid => vid.tabId != details.tabId || (details.frameId != 0 && details.frameId != vid.frameId));
+    if (curVideo && curVideo.tabId == details.tabId && curVideo.frameId == details.frameId){
+        curVideo = undefined;
+    }
     console.log("Vids are", videos);
 });
 
@@ -157,6 +163,7 @@ function onWsMessage(msg:any){
             break;
         case "selectVideo":
             // Disable current selection
+            console.log(videos)
             state.serverCurrent.url = "";
             // Store server preffered video and try to select it immediately
             // this attempt also happens when new videos are reported
@@ -201,8 +208,8 @@ function onMessage(inmsg:any, sender?:any){
 
     console.log("Got msg", msg)
     if (msg.is(CMD.INIT)) {
-        //setupWs("wss://synctastic.herokuapp.com/")
-        setupWs("ws://127.0.0.1:1313")
+        setupWs("wss://synctastic.herokuapp.com/")
+        //setupWs("ws://127.0.0.1:1313")
         awaitSocket(() => {
             let msg = new WsMessage();
             msg.cmd = "setName";
@@ -283,18 +290,20 @@ function onMessage(inmsg:any, sender?:any){
         updateView()
     }
     if (msg.is(CMD.SELECTVIDEO) && msg.hasArgs(1)){
+        if (!host && curVideo) {
+            return;
+        }
         console.log("GOT SELECT VIDEO");
         let src = msg.args[0] as string;
         for(let vid of videos){
             if(vid.src == src){
+                if (host){
+                    sendVideo(vid);
+                }
                 selectVideo(vid);
                 break;
             }
         }
-        if (curVideo && host){
-            sendVideo(curVideo);
-        }
-
     }
     if (msg.is(CMD.CREATEROOM)){
         awaitSocket(() => {

@@ -122,6 +122,7 @@ export default class App extends Vue {
     if (!this.isValidName(this.state.name)){
       this.state.stage = "name";
     }
+      //this.state.stage = "room";
 
   }
 
@@ -166,28 +167,35 @@ export default class App extends Vue {
 <style lang="css">
 html, body {
   font-family: 'Roboto', sans-serif;
+  width: 452px;
+  height: 600px;
   margin: 0px;
   padding: 0px;
   border: none;
+}
+
+
+* {
+  box-sizing: border-box;
 }
 #app {
   /*font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;*/
   text-align: center;
-  width: 300px;
+  width: 100%;
   background-color: #FEFEFE;
 }
 .topbar {
   background: #046F55;
-  width: 300px;
-  height: 50px;
+  width: 100%;
+  height: 67px;
   box-shadow: 0px 3px 2px #AEAEAE;
   font-size: 26px;
   color: #FEFEFE;
   display: inline-block;
   text-align: left;
-  line-height: 50px;
+  line-height: 67px;
   padding-left: 20px;
   padding-right: 20px;
   vertical-align: middle;

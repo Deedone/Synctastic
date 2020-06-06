@@ -120,7 +120,6 @@ function onEvent(e:any){
     if (!active){
         return;
     }
-    // TODO Implement real check of activity
 
     let forceSend = false;
     let state = new VideoState(VIDEOSTATUS.UNKNOWN, e.target.currentTime);
