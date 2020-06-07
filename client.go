@@ -10,6 +10,7 @@ import (
 
 type Client struct {
 	name     string
+	id       int
 	host     bool
 	hadPong  bool
 	ws       *websocket.Conn
@@ -64,6 +65,7 @@ func (c *Client) handleMsg(msg string) {
 		c.name = m.StrArg
 	case "setHost":
 		c.host = m.IntArg == 1
+		c.room.sendInfo()
 	case "createRoom":
 		r := c.lobby.createRoom()
 		c.enterRoom(r)

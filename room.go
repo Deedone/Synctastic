@@ -12,6 +12,7 @@ type Room struct {
 	broadcastChan chan string
 	vidTitle      string
 	id            int
+	lastUserId    int
 	curVideoMsg   string
 }
 
@@ -26,6 +27,7 @@ func newRoom(id int) *Room {
 		broadcastChan: make(chan string),
 		clients:       make(map[*Client]bool),
 		id:            id,
+		lastUserId:    1,
 	}
 }
 
@@ -34,6 +36,8 @@ func (r *Room) reg(c *Client) {
 	r.clients[c] = true
 	fmt.Println(r.id, "Registering", c)
 	r.clientsGuard.Unlock()
+	c.id = r.lastUserId
+	r.lastUserId++
 	r.sendInfo()
 }
 
@@ -73,6 +77,21 @@ func (r *Room) run() {
 	}
 }
 
+func (r *Room) broadcastIds() {
+	for c := range r.clients {
+		msg := Message{
+			Cmd:    "myId",
+			IntArg: float64(c.id),
+		}
+		strmsg, err := json.Marshal(msg)
+		if err != nil {
+			fmt.Println("Error jsoning", msg, err)
+			continue
+		}
+		c.roomin <- string(strmsg)
+	}
+}
+
 func (r *Room) sendInfo() {
 	info, err := json.Marshal(r)
 	if err != nil {
@@ -88,6 +107,7 @@ func (r *Room) sendInfo() {
 	if len(r.curVideoMsg) > 0 {
 		r.broadcast(r.curVideoMsg, true)
 	}
+	r.broadcastIds()
 }
 
 func (r *Room) changeVideo(msg string) {
@@ -104,7 +124,13 @@ func (r *Room) MarshalJSON() ([]byte, error) {
 		Clients:    make([]string, 0),
 	}
 	for c := range r.clients {
-		ri.Clients = append(ri.Clients, c.name)
+		clientInfo := make(map[string]interface{})
+		clientInfo["name"] = c.name
+		clientInfo["id"] = c.id
+		clientInfo["host"] = c.host
+		msgInfo, _ := json.Marshal(clientInfo)
+
+		ri.Clients = append(ri.Clients, string(msgInfo))
 	}
 
 	return json.Marshal(ri)

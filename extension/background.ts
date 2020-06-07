@@ -12,9 +12,10 @@ let curVideo: VideoInfo|undefined;
 
 let state = {
     netstatus : "",
+    userId : 0,
     roomId : 0,
-    roomUsers : 0,
-    roomNames: [],
+    roomUserCount : 0,
+    roomUsers: [],
     stage : "name",
     serverCurrent : {
         name: "",
@@ -24,8 +25,8 @@ let state = {
     name: "",
     vidstate: new VideoState("unknown",0)
 }
-const URL = "wss://synctastic.herokuapp.com/";
-//const URL = "ws://127.0.0.1:1313";
+//const URL = "wss://synctastic.herokuapp.com/";
+const URL = "ws://127.0.0.1:1313";
 //Keep server alive
 setInterval(() => {
     if (!host){
@@ -167,8 +168,8 @@ function onWsMessage(msg:any){
             }
             let info = JSON.parse(data.strArg);
             state.roomId = info.id;
-            state.roomUsers = info.numClients;
-            state.roomNames = info.clients;
+            state.roomUserCount = info.numClients;
+            state.roomUsers = info.clients.map(JSON.parse);
             state.stage = "room";
             updateView();
             break;
@@ -182,6 +183,11 @@ function onWsMessage(msg:any){
             trySelectVideo();
             updateView();
             break;
+        case "myId":
+            if (typeof data.intArg == typeof 1){
+                state.userId = data.intArg as number;
+                updateView();
+            }
         case "broadcast":
             if (data.strArg){
                 onMessage(new InternalMessage(TO.BACKGROND,CMD.VIDEOCONTROL).addArgs(JSON.parse(data.strArg)));
@@ -234,7 +240,8 @@ function onMessage(inmsg:any, sender?:any){
         }
         chrome.storage.local.set({'active':0});
         state.roomId = 0;
-        state.roomUsers = 0;
+        state.roomUserCount = 0;
+        state.roomUsers = [];
         state.stage = "lobby";
         updateView();
         host = 0;

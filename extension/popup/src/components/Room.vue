@@ -4,7 +4,7 @@
     <button @click="leaveRoom" class="rect-button" id="leave">Leave room</button>
     <div id="users-in-room">
       <div>
-        <p v-for="name in state.roomNames" :key="name" v-bind:class="{me:isMe(name)}" class="user" ><i class="material-icons" >person_outline</i> {{name}} </p>
+        <p v-for="user in state.roomUsers" :key="user.id" v-bind:class="{me:isHost(user)}" class="user" ><i class="material-icons" >person_outline</i> {{user.name}} </p>
       </div>
     </div>
     <div id="now-playing">
@@ -31,8 +31,8 @@ export default class Room extends RoomProps {
     this.$emit("leaveRoom")
   }
 
-  isMe(name:string){
-    return name == this.state.name;
+  isHost(user:any){
+    return user.host;
   }
 
 }

@@ -54,10 +54,12 @@ export default class App extends Vue {
   name = 'App';
   state = {
     status :"unknown",
+    id:0,
     timestamp : 0,
     netstatus : "",
     roomId : 0,
-    roomUsers : 0,
+    roomUserCount : 0,
+    roomUsers : [],
     stage : "name",
     name: "",
   }
