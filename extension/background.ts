@@ -183,6 +183,10 @@ function onWsMessage(msg:any){
                 state.userId = data.intArg as number;
                 updateView();
             }
+            break;
+        case "youAreHost":
+                onMessage(new InternalMessage(TO.BACKGROND,CMD.BECOMEHOST));
+                break;
         case "broadcast":
             if (data.strArg){
                 onMessage(new InternalMessage(TO.BACKGROND,CMD.VIDEOCONTROL).addArgs(JSON.parse(data.strArg)));

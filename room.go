@@ -47,6 +47,17 @@ func (r *Room) unreg(c *Client) {
 	if _, ok := r.clients[c]; ok {
 		delete(r.clients, c)
 	}
+
+	if c.host {
+		var c2 *Client = nil
+		for c2 = range r.clients {
+			break
+		}
+
+		if c2 != nil {
+			c2.forcehost()
+		}
+	}
 	r.clientsGuard.Unlock()
 	r.sendInfo()
 }

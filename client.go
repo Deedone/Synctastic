@@ -58,8 +58,6 @@ func (c *Client) handleMsg(msg string) {
 		return
 	}
 
-	fmt.Println("Got msg", msg)
-	fmt.Println("Got msg", m)
 	switch m.Cmd {
 	case "setName":
 		c.name = m.StrArg
@@ -88,6 +86,16 @@ func (c *Client) handleMsg(msg string) {
 	default:
 		fmt.Println("Unkniown command", m.Cmd)
 	}
+}
+
+func (c *Client) forcehost() {
+	c.host = true
+
+	var m Message
+	m.Cmd = "youAreHost"
+	mstr, _ := json.Marshal(m)
+	c.wsout <- string(mstr)
+
 }
 
 func (c *Client) process() {
@@ -121,7 +129,6 @@ func (c *Client) wsWrite() {
 	for {
 		select {
 		case msg := <-c.wsout:
-			fmt.Println("Sending message", msg)
 			err := c.ws.WriteMessage(websocket.TextMessage, []byte(msg))
 			if err != nil {
 				fmt.Println(c.ws.RemoteAddr(), "Error writing, exiting")
