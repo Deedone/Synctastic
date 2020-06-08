@@ -7,9 +7,9 @@
         <p v-for="user in state.roomUsers" :key="user.id" v-bind:class="{me:isHost(user)}" class="user" ><i class="material-icons" >person_outline</i> {{user.name}} </p>
       </div>
     </div>
-    <div id="now-playing">
+    <div v-if="state.serverCurrent" id="now-playing">
       <p>Now playing<i class="material-icons" id="play">play_arrow</i></p><br>
-      <span>{{state.serverCurrent.name}}</span>
+      <span>{{state.serverCurrent.tabName}}</span>
 
     </div>
   </div>

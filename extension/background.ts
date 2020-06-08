@@ -3,25 +3,30 @@ import {InternalMessage, VideoInfo, WsMessage, VideoState, TO, CMD, VIDEOSTATUS}
 //Remove vieo if it's mutated
 
 chrome.runtime.onMessage.addListener(onMessage);
-let curTabName:string = "";
 let watchdog = -1;
 let host = 0;
 let ws:WebSocket;
 let videos: VideoInfo[] = [];
 let curVideo: VideoInfo|undefined;
-
-let state = {
+interface state {
+    netstatus : string
+    userId : number
+    roomId : number
+    roomUserCount : number
+    roomUsers: any[]
+    stage : string
+    serverCurrent : undefined|VideoInfo,
+    name: string
+    vidstate: VideoState
+}
+let state:state = {
     netstatus : "",
     userId : 0,
     roomId : 0,
     roomUserCount : 0,
     roomUsers: [],
     stage : "name",
-    serverCurrent : {
-        name: "",
-        url : "",
-        tabIndex: 0
-    },
+    serverCurrent : undefined,
     name: "",
     vidstate: new VideoState("unknown",0)
 }
@@ -45,7 +50,6 @@ chrome.storage.local.get('state', (items) => {
 })
 
 chrome.tabs.onRemoved.addListener(tabId => {
-    console.log("On tab closed", tabId);
     videos = videos.filter(vid => vid.tabId != tabId);
     if (curVideo && curVideo.tabId == tabId){
         curVideo = undefined;
@@ -55,7 +59,6 @@ chrome.tabs.onRemoved.addListener(tabId => {
 });
 
 chrome.webNavigation.onBeforeNavigate.addListener(details => {
-    console.log("OnBeforeNavigate", details);
     //Clear videos from navigating tab
     videos = videos.filter(vid => vid.tabId != details.tabId || (details.frameId != 0 && details.frameId != vid.frameId));
     if (curVideo && curVideo.tabId == details.tabId && curVideo.frameId == details.frameId){
@@ -85,7 +88,7 @@ function awaitSocket(f:Function) {
    let later = setInterval(() => {
         attempt++;
         if (attempt > 40){
-            console.log("Timeout WS connection");
+            console.error("Timeout WS connection");
             clearInterval(later);
         }
         if (ws.readyState != ws.OPEN){
@@ -96,48 +99,40 @@ function awaitSocket(f:Function) {
    }, 50);
 }
 
-function setActive(tab:number){
-    if (!state.vidstate){
-        state.vidstate = new VideoState(VIDEOSTATUS.UNKNOWN, 0);
-    }
-    curTabName = tab as unknown as string;
-
-    updateView();
-}
-
-
 function updateView(){
     chrome.storage.local.set({state:state});
 }
 
 function trySelectVideo(){
-    if (state.serverCurrent.url == ""){
+    if (!state.serverCurrent || state.serverCurrent.baseUrl == ""){
         curVideo = undefined;
         return;
     }
-    if (curVideo && curVideo.tabUrl == state.serverCurrent.url && curVideo.tabIndex == state.serverCurrent.tabIndex){
+    if (curVideo && curVideo.baseUrl == state.serverCurrent.baseUrl && curVideo.duration == state.serverCurrent.duration){
         //Already selected
         return;
     }
-    let found = false;
-    videos.forEach(v => {
-        if(v.tabUrl == state.serverCurrent.url && v.tabIndex == state.serverCurrent.tabIndex){
-            if (!curVideo || curVideo.src != v.src){
-                found = true;
-                selectVideo(v);
-            }
+    for (let v of videos){
+        if(v.baseUrl == state.serverCurrent.baseUrl && v.src == state.serverCurrent.src){
+            selectVideo(v);
+            return;
         }
-    })
-    if (!found) {
-        // We didn't found matching video so ensure that nothing is selected
-        curVideo = undefined;
     }
+    //SRC search failed, falling back to tabindex
+    for (let v of videos){
+        if(v.baseUrl == state.serverCurrent.baseUrl && v.tabIndex == state.serverCurrent.tabIndex){
+            selectVideo(v);
+            return;
+        }
+    }
+    // We didn't found matching video so ensure that nothing is selected
+    curVideo = undefined;
 }
 
 function selectVideo(vid:VideoInfo){
     console.log("Selecting video", vid);
     curVideo = vid;
-    setActive(vid.tabId);
+    updateView();
 }
 
 function onWsMessage(msg:any){
@@ -176,7 +171,7 @@ function onWsMessage(msg:any){
         case "selectVideo":
             // Disable current selection
             console.log(videos)
-            state.serverCurrent.url = "";
+            state.serverCurrent = undefined;
             // Store server preffered video and try to select it immediately
             // this attempt also happens when new videos are reported
             state.serverCurrent = JSON.parse(data.strArg!);
@@ -200,20 +195,14 @@ function onWsMessage(msg:any){
 }
 
 function sendVideo(video:VideoInfo){
-    
     if (!curVideo || !host){
         return;
     }
     console.log("Sending video to server", video)
-    chrome.tabs.get(curVideo.tabId, tab => {
-        state.serverCurrent.name = tab?.title || "Video";
-        state.serverCurrent.tabIndex = video.tabIndex;
-        state.serverCurrent.url = video.tabUrl;
-        let wsmsg = new WsMessage();
-        wsmsg.cmd = "selectVideo";
-        wsmsg.strArg = JSON.stringify(state.serverCurrent);
-        ws.send(wsmsg.json());
-    });
+    let wsmsg = new WsMessage();
+    wsmsg.cmd = "selectVideo";
+    wsmsg.strArg = JSON.stringify(video);
+    ws.send(wsmsg.json());
 }
 
 function onMessage(inmsg:any, sender?:any){
@@ -249,7 +238,6 @@ function onMessage(inmsg:any, sender?:any){
     }
 
     if (msg.is(CMD.VIDEOINFO) && msg.hasArgs(1)){
-        console.log("GOT VIDEO INFO")
         if (!sender || !sender.tab || !isValidId(sender.frameId)){
             return;
         }
@@ -260,16 +248,14 @@ function onMessage(inmsg:any, sender?:any){
             let video:VideoInfo = arg as VideoInfo;
             video.frameId = sender.frameId;
             video.tabId = sender.tab.id;
-            video.tabUrl = sender.url;
+            video.tabName = sender.tab.title || "Video";
 
-            console.log("Found video", video);
             videos.push(video);
         })
         trySelectVideo();
     }
 
     if (msg.is(CMD.CLEARVIDEOS)){
-        console.log("Got clearvideos");
         if (!sender || !sender.tab || !isValidId(sender.frameId)){
             return;
         }
@@ -281,7 +267,6 @@ function onMessage(inmsg:any, sender?:any){
         if (curVideo && curVideo.frameId == sender.frameId && curVideo.tabId == sender.tabId){
             curVideo = undefined;
         }
-
     }
 
     if (msg.is(CMD.FETCH)){
@@ -310,14 +295,14 @@ function onMessage(inmsg:any, sender?:any){
         if (!host && curVideo) {
             return;
         }
-        console.log("GOT SELECT VIDEO");
         let src = msg.args[0] as string;
         for(let vid of videos){
             if(vid.src == src){
+                state.serverCurrent = vid;
+                selectVideo(vid);
                 if (host){
                     sendVideo(vid);
                 }
-                selectVideo(vid);
                 break;
             }
         }
@@ -327,22 +312,20 @@ function onMessage(inmsg:any, sender?:any){
             let m = new WsMessage()
             m.cmd = "createRoom"
             ws.send(m.json())
-        })
+        });
     }
     if (msg.is(CMD.JOINROOM) && msg.hasArgs(1) && typeof msg.args[0] == typeof 1){
-        console.log("Got join room cmd")
         awaitSocket(() => {
             let m = new WsMessage()
             m.cmd = "joinRoom"
             m.intArg = msg.args[0] as number;
-            console.log("Join room msg", m)
             ws.send(m.json())
         });
     }
     if (msg.is(CMD.VIDEOCONTROL) && msg.hasArgs(1)){
         if (curVideo){
             new InternalMessage(TO.TAB, CMD.VIDEOCONTROL)
-            .addArgs(curVideo.src)
+            .addArgs(curVideo)
             .addArgs(msg.args[0])
             .sendTab(curVideo.tabId, curVideo.frameId);
         }

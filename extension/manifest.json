@@ -1,17 +1,17 @@
 {
-    "name":"SyncMovie",
-    "version": "0.2",
+    "name":"Synctastic",
+    "version": "0.0.0.5",
     "description": "Watch any video together anywhere!",
     "manifest_version":2,
+    "background":{
+        "scripts":["dist/background.js"]
+    },
     "permissions": [
         "activeTab",
         "tabs",
          "webNavigation",
          "storage"
-      ],
-    "background":{
-        "scripts":["dist/background.js"]
-    },
+    ],
     "content_scripts": [
         {
           "matches": ["*://*/*"],
@@ -19,7 +19,7 @@
           "css": ["content.css"],
           "js": ["dist/content.js"]
         }
-      ],
+    ],
     "icons": {
         "128": "images/logo3128.png"
     },
@@ -30,5 +30,4 @@
         "128": "images/logo3128.png"
           }
     }
-
 }

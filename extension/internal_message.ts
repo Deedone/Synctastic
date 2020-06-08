@@ -31,11 +31,15 @@ export enum VIDEOSTATUS {
 }
 
 export interface VideoInfo {
+    // Internal
     src: string
+    tabIndex: number
     tabId: number
     frameId: number
-    tabUrl: string
-    tabIndex: number
+    //External
+    tabName: string
+    baseUrl: string
+    duration: number
 }
 
 type ARGS = (ARG)[]

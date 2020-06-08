@@ -62,6 +62,7 @@ export default class App extends Vue {
     roomUsers : [],
     stage : "name",
     name: "",
+    serverCurrent: undefined
   }
   debug = false
   topbarTitle = {
@@ -112,6 +113,7 @@ export default class App extends Vue {
         if (key == "state"){
           console.log("State key correct")
           this.state = changes[key].newValue;
+          console.log(this.state)
           this.processInitialData();
         }
       }

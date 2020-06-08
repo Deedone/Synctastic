@@ -33,10 +33,10 @@ chrome.storage.local.get('active', res => {
                 return;
             }
             console.log("Got videocontrol", msg)
-            let url = msg.args[0] as string;
+            let info = msg.args[0] as VideoInfo;
             let state = msg.args[1] as VideoState;
 
-            let vid = findVideo(url);
+            let vid = findVideo(info);
             console.log(vid)
             if (!vid){
                 return;
@@ -158,8 +158,10 @@ function reportVideos() {
         let info:VideoInfo = {
             src : v.src,
             tabId:0,
+            tabName: "",
             frameId:0,
-            tabUrl:"",
+            baseUrl:v.baseURI,
+            duration: v.duration,
             tabIndex: i,
         };
         console.log("Reporting video", info, v);
@@ -172,15 +174,17 @@ function reportVideos() {
 
 let findKey = ""
 let findValue: HTMLVideoElement;
-function findVideo(url:string):HTMLVideoElement|undefined {
+function findVideo(info:VideoInfo):HTMLVideoElement|undefined {
+    let key = info.baseUrl + info.tabIndex.toString();
     let vids = document.querySelectorAll("video");
-    if (url == findKey){
+    if (key == findKey){
         return findValue as HTMLVideoElement;
     }
 
     for (let i = 0; i < vids.length; i++){
-        if(vids[i].src == url){
-            findKey = url;
+        let vidkey = vids[i].baseURI + i.toString();
+        if(vidkey == key){
+            findKey = key;
             findValue = vids[i];
             return findValue;
         }
