@@ -4,12 +4,12 @@ import {InternalMessage, VideoInfo, WsMessage, VideoState, TO, CMD, VIDEOSTATUS}
 
 chrome.runtime.onMessage.addListener(onMessage);
 let watchdog = -1;
-let host = 0;
 let ws:WebSocket;
 let videos: VideoInfo[] = [];
 let curVideo: VideoInfo|undefined;
 interface state {
     netstatus : string
+    host :boolean
     userId : number
     roomId : number
     roomUserCount : number
@@ -21,6 +21,7 @@ interface state {
 }
 let state:state = {
     netstatus : "",
+    host: false,
     userId : 0,
     roomId : 0,
     roomUserCount : 0,
@@ -34,7 +35,7 @@ let state:state = {
 const URL = "ws://127.0.0.1:1313";
 //Keep server alive
 setInterval(() => {
-    if (!host){
+    if (!state.host){
         return;
     }
     let xmlHttp = new XMLHttpRequest();
@@ -199,7 +200,7 @@ function onWsMessage(msg:any){
 }
 
 function sendVideo(video:VideoInfo){
-    if (!curVideo || !host){
+    if (!curVideo || !state.host){
         return;
     }
     console.log("Sending video to server", video)
@@ -237,7 +238,7 @@ function onMessage(inmsg:any, sender?:any){
         state.roomUsers = [];
         state.stage = "lobby";
         updateView();
-        host = 0;
+        state.host = false;
 
     }
 
@@ -276,9 +277,21 @@ function onMessage(inmsg:any, sender?:any){
     if (msg.is(CMD.FETCH)){
         updateView();
     }
+
+    if (msg.is(CMD.TRANSFERHOST) && msg.hasArgs(1)){
+        if (typeof msg.args[0] != typeof 1){
+            return;
+        }
+        let wsmsg = new WsMessage()
+        wsmsg.cmd = "transferHost";
+        wsmsg.intArg = msg.args[0] as number;
+        state.host = false;
+        ws.send(wsmsg.json());
+        updateView();
+    }
     if (msg.is(CMD.BECOMEHOST)){
         awaitSocket(() => {
-            host = 1;
+            state.host = true;
             let m = new WsMessage();
             m.cmd = "setHost";
             m.intArg = 1;
@@ -290,13 +303,13 @@ function onMessage(inmsg:any, sender?:any){
     }
     if (msg.is(CMD.VIDEOSTATUS) && msg.hasArgs(1)){
         state.vidstate = new VideoState(msg.args[0]);
-        if (host){
+        if (state.host){
             ws.send(state.vidstate.broadcast())
         }
         updateView()
     }
     if (msg.is(CMD.SELECTVIDEO) && msg.hasArgs(1)){
-        if (!host && curVideo) {
+        if (!state.host && curVideo) {
             return;
         }
         let src = msg.args[0] as string;
@@ -304,7 +317,7 @@ function onMessage(inmsg:any, sender?:any){
             if(vid.src == src){
                 state.serverCurrent = vid;
                 selectVideo(vid);
-                if (host){
+                if (state.host){
                     sendVideo(vid);
                 }
                 break;

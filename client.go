@@ -80,6 +80,12 @@ func (c *Client) handleMsg(msg string) {
 		if c.host && c.room != nil {
 			c.room.changeVideo(msg)
 		}
+	case "transferHost":
+		if !c.host || c.room == nil {
+			return
+		}
+		c.host = false
+		c.room.setHost(int(m.IntArg))
 	case "pong":
 		c.hadPong = true
 

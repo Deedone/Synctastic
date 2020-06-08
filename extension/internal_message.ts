@@ -21,7 +21,8 @@ export enum CMD {
     JOINROOM,
     SELECTVIDEO,
     SETNAME,
-    CLEARVIDEOS
+    CLEARVIDEOS,
+    TRANSFERHOST
 }
 
 export enum VIDEOSTATUS {

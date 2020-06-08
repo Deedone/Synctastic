@@ -62,6 +62,16 @@ func (r *Room) unreg(c *Client) {
 	r.sendInfo()
 }
 
+func (r *Room) setHost(id int) {
+	for c := range r.clients {
+		if c.id == id {
+			c.forcehost()
+			break
+		}
+	}
+	r.sendInfo()
+}
+
 func (r *Room) broadcast(msg string, nohost bool) {
 	r.clientsGuard.Lock()
 	for client := range r.clients {

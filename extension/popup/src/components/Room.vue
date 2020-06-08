@@ -2,9 +2,17 @@
   <div >
     <p id="room-id">Room ID:<br> <span>{{state.roomId}}</span></p><br>
     <button @click="leaveRoom" class="rect-button" id="leave">Leave room</button>
+    <button v-if="state.host" @click="transferHostInit" class="rect-button" id="selhost">Change host</button>
     <div id="users-in-room">
       <div>
-        <p v-for="user in state.roomUsers" :key="user.id" v-bind:class="{me:isHost(user)}" class="user" ><i class="material-icons" >person_outline</i> {{user.name}} </p>
+        <p v-for="user in state.roomUsers" 
+        @click="tryTransferHost(user.id)"
+        :key="user.id" 
+        v-bind:class="{me:isHost(user), clickable:selectHost}" 
+        class="user" >
+          <i class="material-icons" >{{userIcon(selectHost)}}</i> 
+          {{user.name}} 
+        </p>
       </div>
     </div>
     <div v-if="state.serverCurrent" id="now-playing">
@@ -18,6 +26,7 @@
 <script lang="ts">
 import Vue from 'vue';
 import Component from 'vue-class-component';
+import { InternalMessage, TO, CMD } from '../../../internal_message';
 
 const RoomProps = Vue.extend({
     props: ['state']
@@ -27,8 +36,38 @@ const RoomProps = Vue.extend({
 })
 export default class Room extends RoomProps {
 
+  constructor(){
+    super();
+    this.selectHost = false;
+
+  }
+
+  tryTransferHost(userId:number){
+    if (!this.selectHost){
+      return;
+    }
+    console.log("Transfering host to", userId);
+    new InternalMessage(TO.BACKGROND, CMD.TRANSFERHOST )
+    .addArgs(userId)
+    .send();
+    this.selectHost = false;
+
+  }
+
+  selectHost: boolean
   leaveRoom(){
     this.$emit("leaveRoom")
+  }
+
+  transferHostInit(){
+    this.selectHost = true;
+  }
+
+  userIcon(state:boolean){
+    if (!state){
+      return "person_outline";
+    }
+    return "double_arrow"
   }
 
   isHost(user:any){
@@ -73,6 +112,14 @@ color: #AAAAAA;
 height: 38px;
 }
 
+#selhost {
+  position:absolute;
+  top:253px;
+  width: 156px;
+  height: 38px;
+  left:260px;
+}
+
 #users-in-room{
   position: absolute;
   width: 216px;
@@ -82,6 +129,9 @@ height: 38px;
   left: 10px;
 }
 
+.clickable {
+  cursor:pointer;
+}
 .user{
  width: 217px;
  text-align:left;
