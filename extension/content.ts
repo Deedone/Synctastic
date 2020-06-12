@@ -95,6 +95,15 @@ chrome.storage.local.get('active', res => {
 // End of initialization
 
 
+function stripParams(url:string):string{
+
+    let index = url.indexOf("?");
+    if (index === -1){
+        return url;
+    }
+    return url.substring(0,index);
+}
+
 function init(vid:HTMLVideoElement){
 
     attachEvents(vid);
@@ -160,7 +169,7 @@ function reportVideos() {
             tabId:0,
             tabName: "",
             frameId:0,
-            baseUrl:v.baseURI,
+            baseUrl:stripParams(v.baseURI),
             duration: v.duration,
             tabIndex: i,
         };
@@ -176,13 +185,13 @@ let findKey = ""
 let findValue: HTMLVideoElement;
 function findVideo(info:VideoInfo):HTMLVideoElement|undefined {
     let key = info.baseUrl + info.tabIndex.toString();
-    let vids = document.querySelectorAll("video");
     if (key == findKey){
         return findValue as HTMLVideoElement;
     }
+    let vids = document.querySelectorAll("video");
 
     for (let i = 0; i < vids.length; i++){
-        let vidkey = vids[i].baseURI + i.toString();
+        let vidkey = stripParams(vids[i].baseURI) + i.toString();
         if(vidkey == key){
             findKey = key;
             findValue = vids[i];

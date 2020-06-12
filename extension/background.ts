@@ -31,16 +31,20 @@ let state:state = {
     name: "",
     vidstate: new VideoState("unknown",0)
 }
-//const URL = "wss://synctastic.herokuapp.com/";
-const URL = "ws://127.0.0.1:1313";
+const URL = "wss://synctastic.herokuapp.com/";
+//const URL = "ws://127.0.0.1:1313";
 //Keep server alive
 setInterval(() => {
     if (!state.host){
         return;
     }
-    let xmlHttp = new XMLHttpRequest();
-    xmlHttp.open("GET",URL);
-    xmlHttp.send(null);
+    let tempWS:WebSocket|null = new WebSocket(URL);
+    setTimeout(() => {
+        if (tempWS && tempWS.readyState == tempWS.OPEN){
+            tempWS.close();
+        }
+        tempWS = null;
+    }, 1000);
 } ,1000 * 60 * 20) //20 minutes
 
 //Init state
