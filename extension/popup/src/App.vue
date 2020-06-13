@@ -4,7 +4,6 @@
       {{topbarTitle[state.stage]}}
       <button class="topbar-button" @click="toggleDebug">
         <i class="material-icons" id="topbar-button-icon">help_outline</i>
-        D
       </button>
     </div>
       <div v-if="!debug">
@@ -15,6 +14,7 @@
           @createRoom="createRoom"
         ></Lobby>
         <JoinRoom v-if="state.stage == 'join'"
+          @setStage="setStage"
          @joinRoom="joinRoom"></JoinRoom>
          <Room v-if="state.stage == 'room'"
                 :state="state"
@@ -91,6 +91,9 @@ export default class App extends Vue {
 
   setStage(stage:string){
     if (stage == "join"){
+      this.state.stage = stage;
+    }
+    if (stage == "lobby"){
       this.state.stage = stage;
     }
   }
@@ -210,8 +213,8 @@ html, body {
   height: 25px;
   border: 1px black;
   position: absolute;
-  right: 10px;
-  top: 15px;
+  right: 18px;
+  top: 23px;
   display: inline-block;
   vertical-align: middle;
 }
@@ -228,7 +231,7 @@ html, body {
   width: 20px;
   height: 25px;
   position: absolute;
-  right: 8px;
+  right: 0px;
   top: 0px;
   color: white;
 }
@@ -256,9 +259,11 @@ html, body {
 }
 
 .generic-text {
-width: 194px;
+/* width: 194px; */
+text-align:left;
 height: 30px;
 margin: 5px;
+margin-left:21px;
 
 font-family: Roboto;
 font-style: normal;

@@ -97,6 +97,9 @@ chrome.storage.local.get('active', res => {
 
 function stripParams(url:string):string{
 
+    if (url.indexOf("youtube") !== -1){
+        return url;
+    }
     let index = url.indexOf("?");
     if (index === -1){
         return url;
@@ -105,18 +108,7 @@ function stripParams(url:string):string{
 }
 
 function init(vid:HTMLVideoElement){
-
     attachEvents(vid);
-
-    chrome.runtime.onMessage.addListener((inmsg:any) => {
-    let msg = new InternalMessage(inmsg);
-        if (!vid){
-            return;
-        }
-        if (msg.to != TO.TAB){
-            return;
-        }
-    })
 }
  
 function attachEvents(vid: HTMLVideoElement){
@@ -133,7 +125,7 @@ function onEvent(e:any){
     let forceSend = false;
     let state = new VideoState(VIDEOSTATUS.UNKNOWN, e.target.currentTime);
     if (e.type == "play"){
-        let startMst = new InternalMessage(TO.BACKGROND, CMD.SELECTVIDEO)
+        new InternalMessage(TO.BACKGROND, CMD.SELECTVIDEO)
         .addArgs(e.target.src)
         .send()
         forceSend = true;
@@ -147,7 +139,7 @@ function onEvent(e:any){
     
     let now = Date.now();
 
-    if (forceSend || now - lastUpdate > 1000){
+    if (forceSend || now - lastUpdate > 3000){
         new InternalMessage(TO.BACKGROND, CMD.VIDEOSTATUS)
         .addArgs(state)
         .send()
@@ -177,7 +169,6 @@ function reportVideos() {
         init(v);
         msg.addArgs(info);
     })
-    console.log(msg.args)
     msg.send();
 }
 

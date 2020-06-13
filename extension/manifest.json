@@ -1,6 +1,6 @@
 {
     "name":"Synctastic",
-    "version": "0.0.0.5",
+    "version": "1.0.0.0",
     "description": "Watch any video together anywhere!",
     "manifest_version":2,
     "background":{

@@ -3,6 +3,14 @@
 NAME=synctastic.zip
 rm $NAME
 
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+if grep "//const URL = \"wss://synctastic.herokuapp.com/\";" extension/background.ts
+then
+echo -e "${RED} Warning, probably wrong server URL. Please check. ${NC}"
+fi
+
+
 echo BUIDING EXTENSION
 mkdir build
 bash -c "cd extension; npx webpack"

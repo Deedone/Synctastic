@@ -20,6 +20,7 @@
       <span>{{state.serverCurrent.tabName}}</span>
 
     </div>
+    <a target="blank" href="https://forms.gle/2LRe3wdofcz59b8q8" id="report-bug">Report bug</a>
   </div>
 </template>
 
@@ -85,6 +86,25 @@ export default class Room extends RoomProps {
 #room-id span{
   color:black;
 }
+
+#report-bug{
+  position: absolute;
+  width: 118px;
+  height: 35px;
+  text-decoration: underline;
+
+  font-family: Roboto;
+  font-style: normal;
+  font-weight: normal;
+  font-size: 24px;
+  line-height: 35px;
+
+  /* identical to box height, or 146% */
+
+  color: #046F55;
+  bottom:9px;
+  left:321px;
+}
 #room-id {
 position: absolute;
 width: 162px;
@@ -135,13 +155,13 @@ height: 38px;
 .user{
  width: 217px;
  text-align:left;
-height: 35px;
+  height: 35px;
 
-font-family: Roboto;
-font-style: normal;
-font-weight: normal;
-font-size: 24px;
-line-height: 35px;
+  font-family: Roboto;
+  font-style: normal;
+  font-weight: normal;
+  font-size: 24px;
+  line-height: 35px;
 }
 
 .user.me {
@@ -149,20 +169,20 @@ line-height: 35px;
 }
 #now-playing {
   position: absolute;
-width: 424px;
-height: 122px;
+  width: 424px;
+  height: 122px;
 
-font-family: Roboto;
-font-style: normal;
-font-weight: normal;
-font-size: 36px;
-line-height: 35px;
-text-align:left;
+  font-family: Roboto;
+  font-style: normal;
+  font-weight: normal;
+  font-size: 36px;
+  line-height: 35px;
+  text-align:left;
 
-top:407px;
-left:10px;
+  top:407px;
+  left:10px;
 
-color: #AAAAAA;
+  color: #AAAAAA;
 }
 #now-playing span {
   color: black;
