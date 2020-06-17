@@ -2,10 +2,10 @@
   <div id="app" style="height: 400px;">
     <div class="topbar">
       {{topbarTitle[state.stage]}}
-      <button class="topbar-button" @click="toggleDebug">
+      <button class="topbar-button">
         <i class="material-icons" id="topbar-button-icon">help_outline</i>
       </button>
-    </div>
+    </div class="popupBody">
       <div v-if="!debug">
         <NameSelect v-if="state.stage == 'name'"
          @nameChanged="changeName" ></NameSelect>
@@ -174,8 +174,8 @@ export default class App extends Vue {
 <style lang="css">
 html, body {
   font-family: 'Roboto', sans-serif;
-  width: 452px;
-  height: 600px;
+  width: 300px;
+  height: 500px;
   margin: 0px;
   padding: 0px;
   border: none;
@@ -189,20 +189,25 @@ html, body {
   /*font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;*/
-  text-align: center;
   width: 100%;
   background-color: #FEFEFE;
+}
+
+.popupBody {
+  text-align: left;
+  padding-left: 20px;
+  padding-top: 20px;
 }
 .topbar {
   background: #046F55;
   width: 100%;
-  height: 67px;
+  height: 50px;
   box-shadow: 0px 3px 2px #AEAEAE;
-  font-size: 26px;
+  font-size: 22px;
   color: #FEFEFE;
   display: inline-block;
   text-align: left;
-  line-height: 67px;
+  line-height: 50px;
   padding-left: 20px;
   padding-right: 20px;
   vertical-align: middle;
@@ -214,7 +219,7 @@ html, body {
   border: 1px black;
   position: absolute;
   right: 18px;
-  top: 23px;
+  top: 15px;
   display: inline-block;
   vertical-align: middle;
 }
@@ -247,6 +252,8 @@ html, body {
   display: inline-block;
   font-size: 16px;
   cursor: pointer;
+  margin-top: 10px;
+  margin-bottom: 10px;
 }
 
 .rect-button:hover {
@@ -261,24 +268,46 @@ html, body {
 .generic-text {
 /* width: 194px; */
 text-align:left;
-height: 30px;
-margin: 5px;
-margin-left:21px;
+height: 22px;
 
 font-family: Roboto;
 font-style: normal;
 font-weight: normal;
-font-size: 24px;
-line-height: 30px;
-
+font-size: 22px;
+line-height: 22px;
 /* or 125% */
 
 color: #000000;
+
+}
+.secondary-text {
+  height: 45px;
+  font-size: 13px;
+  line-height: 16px;
+  font-family: Roboto;
+  font-style: normal;
+  font-weight: normal;
+  color: #808080;
+  padding-right: 59px;
+  padding-top: 10px;
 }
 
 .input {
-  
-width: 216px;
-height: 35px;
+  font-family: Roboto;
+  font-style: normal;
+  font-weight: normal;
+  font-size: 14px;
+  width: 216px;
+  height: 35px;
+  border: 2px solid #BABABA;
+  border-radius: 3px;
 }
+
+.input:focus {
+  border: 2px solid #4f4f4f;
+}
+
+
+
+
 </style>
