@@ -35,12 +35,19 @@ func handleWebsocket(w http.ResponseWriter, r *http.Request) {
 	client.enterLobby(lobby)
 }
 
+func handleHttp(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Got keepalive")
+	w.WriteHeader(200)
+	w.Write([]byte("nice"))
+}
+
 func main() {
 	var port = os.Getenv("PORT")
 	if port == "" {
 		port = "1313"
 	}
 
+	http.HandleFunc("/keepalive", handleHttp)
 	http.HandleFunc("/", handleWebsocket)
 	fmt.Println("LISTENING", port)
 	fmt.Println(http.ListenAndServe("0.0.0.0:"+port, nil))

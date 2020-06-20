@@ -22,7 +22,8 @@ export enum CMD {
     SELECTVIDEO,
     SETNAME,
     CLEARVIDEOS,
-    TRANSFERHOST
+    TRANSFERHOST,
+    POPUPOPEN,
 }
 
 export enum VIDEOSTATUS {

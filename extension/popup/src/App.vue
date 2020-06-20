@@ -100,7 +100,7 @@ export default class App extends Vue {
 
 
   beforeMount(){
-    console.log("taki before mount");
+    new InternalMessage(TO.BACKGROND, CMD.POPUPOPEN).send();
     chrome.runtime.onMessage.addListener((m) => this.onMessage(m));
     //Load state from shared storage
     chrome.storage.local.get("state", resp => {

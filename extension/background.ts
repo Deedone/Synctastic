@@ -38,13 +38,7 @@ setInterval(() => {
     if (!state.host){
         return;
     }
-    let tempWS:WebSocket|null = new WebSocket(URL);
-    setTimeout(() => {
-        if (tempWS && tempWS.readyState == tempWS.OPEN){
-            tempWS.close();
-        }
-        tempWS = null;
-    }, 1000);
+    keepalive();
 } ,1000 * 60 * 20) //20 minutes
 
 //Init state
@@ -72,6 +66,12 @@ chrome.webNavigation.onBeforeNavigate.addListener(details => {
     console.log("Vids are", videos);
 });
 
+// Send request ro HEROKU to wake it up
+function keepalive(){
+    let xhr = new XMLHttpRequest();
+    xhr.open("GET", URL.replace("ws","http") + "/keepalive");
+    xhr.send();
+}
 
 function setupWs(addr:string){
     ws = new WebSocket(addr);
@@ -280,6 +280,10 @@ function onMessage(inmsg:any, sender?:any){
 
     if (msg.is(CMD.FETCH)){
         updateView();
+    }
+
+    if (msg.is(CMD.POPUPOPEN)){
+        keepalive();
     }
 
     if (msg.is(CMD.TRANSFERHOST) && msg.hasArgs(1)){
