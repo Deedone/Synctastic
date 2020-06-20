@@ -35,12 +35,13 @@ export enum VIDEOSTATUS {
 export interface VideoInfo {
     // Internal
     src: string
-    tabIndex: number
+    tabIndex: number // Index of video within frame
     tabId: number
     frameId: number
     //External
-    tabName: string
-    baseUrl: string
+    tabName: string 
+    baseUrl: string //URL of the frame that contains actual video
+    pageUrl: string //URL of the top frame on a page
     duration: number
 }
 

@@ -250,6 +250,7 @@ function onMessage(inmsg:any, sender?:any){
         if (!sender || !sender.tab || !isValidId(sender.frameId)){
             return;
         }
+        let pageUrl = sender.tab.url;
         msg.args.forEach(arg => {
             if (typeof arg != typeof {}){
                 return;
@@ -258,6 +259,7 @@ function onMessage(inmsg:any, sender?:any){
             video.frameId = sender.frameId;
             video.tabId = sender.tab.id;
             video.tabName = sender.tab.title || "Video";
+            video.pageUrl = pageUrl;
 
             videos.push(video);
         })

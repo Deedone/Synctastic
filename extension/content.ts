@@ -163,6 +163,7 @@ function reportVideos() {
             frameId:0,
             baseUrl:stripParams(v.baseURI),
             duration: v.duration,
+            pageUrl: "",
             tabIndex: i,
         };
         console.log("Reporting video", info, v);

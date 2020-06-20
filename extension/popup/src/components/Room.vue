@@ -17,7 +17,7 @@
     </div>
     <div v-if="state.serverCurrent" id="now-playing">
       <p>Now playing<i class="material-icons" id="play">play_arrow</i></p><br>
-      <span>{{state.serverCurrent.tabName}}</span>
+      <a target="_blank" :href="state.serverCurrent.pageUrl">{{state.serverCurrent.tabName}}</a>
 
     </div>
     <a target="blank" href="https://forms.gle/2LRe3wdofcz59b8q8" id="report-bug">Report bug</a>
