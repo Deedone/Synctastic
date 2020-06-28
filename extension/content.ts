@@ -1,4 +1,4 @@
-import {InternalMessage, VideoState, VideoInfo, TO, CMD, VIDEOSTATUS} from "./internal_message"
+import {InternalMessage, VideoState, VideoInfo, PageInfo, TO, CMD, VIDEOSTATUS} from "./internal_message"
 
 let active = 0;
 
@@ -16,6 +16,7 @@ chrome.storage.local.get('active', res => {
             if (key == "active"){
                 active = changes[key].newValue;
                 if (active){
+                    reportPageInfo();
                     reportVideos();
                 }
             }
@@ -77,6 +78,7 @@ chrome.storage.local.get('active', res => {
         }
 
         if (rescan){
+            reportPageInfo();
             reportVideos();
         }
     })
@@ -87,12 +89,20 @@ chrome.storage.local.get('active', res => {
         subtree:true
     });
     if (active){
+        reportPageInfo();
         reportVideos();
     }
 
 });
 
 // End of initialization
+
+function reportPageInfo(){
+
+    let inf = new PageInfo(window.location.href, document.title);
+
+    new InternalMessage(TO.BACKGROND, CMD.PAGEINFO).addArgs(inf).send();
+}
 
 
 function stripParams(url:string):string{

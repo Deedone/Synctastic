@@ -17,6 +17,7 @@ export enum CMD {
     STOP,
     UPDATE,
     VIDEOINFO,
+    PAGEINFO,
     CREATEROOM,
     JOINROOM,
     SELECTVIDEO,
@@ -45,8 +46,8 @@ export interface VideoInfo {
     duration: number
 }
 
-type ARGS = (ARG)[]
-type ARG = string | number | VideoState | VideoInfo 
+type ARGS = (ARG)[];
+type ARG = string | number | VideoState | VideoInfo | PageInfo;
 
 export class VideoState {
     timestamp: number
@@ -69,6 +70,17 @@ export class VideoState {
         m.cmd = "broadcast"
         m.strArg = JSON.stringify(this)
         return JSON.stringify(m);
+    }
+}
+
+export class PageInfo {
+    url:string;
+    title:string;
+
+    constructor(u:string, t:string){
+        this.url = u;
+        this.title = t;
+
     }
 }
 

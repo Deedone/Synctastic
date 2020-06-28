@@ -77,7 +77,7 @@ export default class App extends Vue {
   }
 
   isValidName(name:string):boolean{
-    return typeof name == typeof "" && name.length > 3;
+    return typeof name == typeof "" && name.length > 0;
   }
   changeName(name:string){
     console.log(name);

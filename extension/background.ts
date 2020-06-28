@@ -1,4 +1,4 @@
-import {InternalMessage, VideoInfo, WsMessage, VideoState, TO, CMD, VIDEOSTATUS} from "./internal_message"
+import {InternalMessage, VideoInfo, WsMessage, VideoState, TO, CMD, VIDEOSTATUS, PageInfo} from "./internal_message"
 
 //Remove vieo if it's mutated
 
@@ -31,6 +31,8 @@ let state:state = {
     name: "",
     vidstate: new VideoState("unknown",0)
 }
+let tabs = new Map<Number, PageInfo>();
+
 const URL = "wss://synctastic.herokuapp.com/";
 //const URL = "ws://127.0.0.1:1313";
 //Keep server alive
@@ -204,14 +206,16 @@ function onWsMessage(msg:any){
 }
 
 function sendVideo(video:VideoInfo){
-    if (!curVideo || !state.host){
+    if (!state.host){
         return;
     }
+
     console.log("Sending video to server", video)
     let wsmsg = new WsMessage();
     wsmsg.cmd = "selectVideo";
     wsmsg.strArg = JSON.stringify(video);
     ws.send(wsmsg.json());
+    state.serverCurrent = video;
 }
 
 function onMessage(inmsg:any, sender?:any){
@@ -246,20 +250,44 @@ function onMessage(inmsg:any, sender?:any){
 
     }
 
+    if (msg.is(CMD.PAGEINFO) && msg.hasArgs(1)) {
+        let inf = msg.args[0] as PageInfo;
+        if (!sender || !sender.tab){
+            return;
+        }
+
+        if (sender.frameId != 0) {
+            return;
+        }
+        for(let vid of videos) {
+            if (vid.tabId == sender.tab.id) {
+                vid.pageUrl = inf.url;
+                vid.tabName = inf.title;
+            }
+        }
+        if (state.host && curVideo && curVideo.tabId == sender.tab.id) {
+            curVideo.pageUrl = inf.url;
+            curVideo.tabName = inf.title;
+            sendVideo(curVideo);
+        }
+
+        tabs.set(sender.tab.id, inf);
+    }
+
     if (msg.is(CMD.VIDEOINFO) && msg.hasArgs(1)){
         if (!sender || !sender.tab || !isValidId(sender.frameId)){
             return;
         }
-        let pageUrl = sender.tab.url;
         msg.args.forEach(arg => {
             if (typeof arg != typeof {}){
                 return;
             }
+            let tab = tabs.get(sender.tab.id);
             let video:VideoInfo = arg as VideoInfo;
             video.frameId = sender.frameId;
             video.tabId = sender.tab.id;
-            video.tabName = sender.tab.title || "Video";
-            video.pageUrl = pageUrl;
+            video.tabName = tab?.title || "Video";
+            video.pageUrl = tab?.url || "none";
 
             videos.push(video);
         })

@@ -1,6 +1,6 @@
 {
     "name":"Synctastic",
-    "version": "1.0.0.4",
+    "version": "1.0.1.0",
     "description": "Watch any video together anywhere!",
     "manifest_version":2,
     "background":{
@@ -8,8 +8,7 @@
     },
     "permissions": [
         "webNavigation",
-        "storage",
-        "tabs"
+        "storage"
 ],
     "content_scripts": [
         {
