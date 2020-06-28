@@ -193,6 +193,7 @@ function onWsMessage(msg:any){
             break;
         case "youAreHost":
                 onMessage(new InternalMessage(TO.BACKGROND,CMD.BECOMEHOST));
+                notifyHost()
                 break;
         case "broadcast":
             if (data.strArg){
@@ -203,6 +204,15 @@ function onWsMessage(msg:any){
     }
 
     updateView();
+}
+
+function notifyHost() {
+    chrome.notifications.create("host", {
+        type:"basic",
+        iconUrl:"images/logo3128.png",
+        title:"Synctastic",
+        message: "You are now a room host",
+    });
 }
 
 function sendVideo(video:VideoInfo){
