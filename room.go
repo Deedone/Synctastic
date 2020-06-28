@@ -41,6 +41,7 @@ func newRoom(id int) *Room {
 func (r *Room) stop() {
 	r.tick.Stop()
 	r.done <- true
+	r.id = -1
 }
 
 func (r *Room) reg(c *Client) {
@@ -112,8 +113,8 @@ func (r *Room) run() {
 			} else {
 				r.aloneCount = 0
 			}
-			if r.aloneCount >= 25 {
-				fmt.Printf("Dropping empy room %+v\n", r)
+			if r.aloneCount >= 25 && len(r.clients) > 0 {
+				fmt.Printf("Dropping empty room %+v\n", r)
 				for c := range r.clients {
 					c.kick()
 				}
