@@ -33,8 +33,8 @@ let state:state = {
 }
 let tabs = new Map<Number, PageInfo>();
 
-const URL = "wss://synctastic.herokuapp.com/";
-//const URL = "ws://127.0.0.1:1313";
+//const URL = "wss://synctastic.herokuapp.com/";
+const URL = "ws://127.0.0.1:1313";
 //Keep server alive
 setInterval(() => {
     if (!state.host){
@@ -185,6 +185,13 @@ function onWsMessage(msg:any){
             trySelectVideo();
             updateView();
             break;
+        case "kick":
+            state.roomId = 0;
+            state.stage = "lobby";
+            ws.close();
+            state.host = false;
+            updateView();
+            notifyKick();
         case "myId":
             if (typeof data.intArg == typeof 1){
                 state.userId = data.intArg as number;
@@ -204,6 +211,15 @@ function onWsMessage(msg:any){
     }
 
     updateView();
+}
+
+function notifyKick(){
+    chrome.notifications.create("host", {
+        type:"basic",
+        iconUrl:"images/logo3128.png",
+        title:"Synctastic",
+        message: "You were kicked for being idle for too long",
+    });
 }
 
 function notifyHost() {

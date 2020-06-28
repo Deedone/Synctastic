@@ -50,6 +50,18 @@ func fromWS(ws *websocket.Conn) *Client {
 	return &c
 }
 
+func (c *Client) kick() {
+	var m Message
+	m.Cmd = "kick"
+	mstr, _ := json.Marshal(m)
+	c.wsout <- string(mstr)
+	//Self destruct
+	go func() {
+		time.Sleep(2)
+		c.kill()
+	}()
+}
+
 func (c *Client) handleMsg(msg string) {
 	var m Message
 	err := json.Unmarshal([]byte(msg), &m)

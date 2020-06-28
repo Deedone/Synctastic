@@ -52,6 +52,7 @@ func (l *Lobby) clearRooms() {
 	for room := range l.rooms {
 		if len(room.clients) == 0 {
 			fmt.Printf("Cleaning room %+v\n", room)
+			room.stop()
 			delete(l.rooms, room)
 		}
 	}

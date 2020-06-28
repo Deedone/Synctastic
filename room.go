@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync"
+	"time"
 )
 
 type Room struct {
@@ -14,6 +15,9 @@ type Room struct {
 	id            int
 	lastUserId    int
 	curVideoMsg   string
+	tick          *time.Ticker
+	done          chan bool
+	aloneCount    int
 }
 
 type RoomInfo struct {
@@ -28,7 +32,15 @@ func newRoom(id int) *Room {
 		clients:       make(map[*Client]bool),
 		id:            id,
 		lastUserId:    1,
+		tick:          time.NewTicker(1 * time.Minute),
+		done:          make(chan bool),
+		aloneCount:    0,
 	}
+}
+
+func (r *Room) stop() {
+	r.tick.Stop()
+	r.done <- true
 }
 
 func (r *Room) reg(c *Client) {
@@ -94,6 +106,20 @@ func (r *Room) run() {
 		select {
 		case msg := <-r.broadcastChan:
 			r.broadcast(msg, true)
+		case <-r.tick.C:
+			if len(r.clients) < 2 {
+				r.aloneCount++
+			} else {
+				r.aloneCount = 0
+			}
+			if r.aloneCount >= 25 {
+				fmt.Printf("Dropping empy room %+v\n", r)
+				for c := range r.clients {
+					c.kick()
+				}
+			}
+		case <-r.done:
+			return
 		}
 	}
 }
