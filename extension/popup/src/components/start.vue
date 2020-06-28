@@ -1,20 +1,15 @@
 <template>
-  <div>
-
-  </div>
+  <div></div>
 </template>
 
 <script lang="ts">
-import Vue from 'vue';
-import Component from 'vue-class-component';
+import Vue from "vue";
+import Component from "vue-class-component";
 
 @Component({
-  name: 'start'
+  name: "start",
 })
-export default class start extends Vue {
-}
+export default class start extends Vue {}
 </script>
 
-<style lang="css">
-
-</style>
+<style lang="css"></style>

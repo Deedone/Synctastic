@@ -1,93 +1,105 @@
 <template>
-  <div >
-    <p id="room-id">Room ID:<br> <span>{{state.roomId}}</span></p><br>
-    <button @click="leaveRoom" class="rect-button" id="leave">Leave room</button>
-    <button v-if="state.host" @click="transferHostInit" class="rect-button" id="selhost">Change host</button>
+  <div>
+    <p id="room-id">
+      Room ID:<br />
+      <span>{{ state.roomId }}</span>
+    </p>
+    <br />
+    <button @click="leaveRoom" class="rect-button" id="leave">
+      Leave room
+    </button>
+    <button
+      v-if="state.host"
+      @click="transferHostInit"
+      class="rect-button"
+      id="selhost"
+    >
+      Change host
+    </button>
     <div id="users-in-room">
       <div>
-        <p v-for="user in state.roomUsers" 
-        @click="tryTransferHost(user.id)"
-        :key="user.id" 
-        v-bind:class="{me:isHost(user), clickable:selectHost}" 
-        class="user" >
-          <i class="material-icons" >{{userIcon(selectHost)}}</i> 
-          {{user.name}} 
+        <p
+          v-for="user in state.roomUsers"
+          @click="tryTransferHost(user.id)"
+          :key="user.id"
+          v-bind:class="{ me: isHost(user), clickable: selectHost }"
+          class="user"
+        >
+          <i class="material-icons">{{ userIcon(selectHost) }}</i>
+          {{ user.name }}
         </p>
       </div>
     </div>
     <div v-if="state.serverCurrent" id="now-playing">
-      <p>Now playing<i class="material-icons" id="play">play_arrow</i></p><br>
-      <a target="_blank" :href="state.serverCurrent.pageUrl">{{state.serverCurrent.tabName}}</a>
-
+      <p>Now playing<i class="material-icons" id="play">play_arrow</i></p>
+      <br />
+      <a target="_blank" :href="state.serverCurrent.pageUrl">{{
+        state.serverCurrent.tabName
+      }}</a>
     </div>
-    <a target="blank" href="https://forms.gle/2LRe3wdofcz59b8q8" id="report-bug">Report bug</a>
+    <a target="blank" href="https://forms.gle/2LRe3wdofcz59b8q8" id="report-bug"
+      >Report bug</a
+    >
   </div>
 </template>
 
 <script lang="ts">
-import Vue from 'vue';
-import Component from 'vue-class-component';
-import { InternalMessage, TO, CMD } from '../../../internal_message';
+import Vue from "vue";
+import Component from "vue-class-component";
+import { InternalMessage, TO, CMD } from "../../../internal_message";
 
 const RoomProps = Vue.extend({
-    props: ['state']
-})
+  props: ["state"],
+});
 @Component({
-  name: 'Room'
+  name: "Room",
 })
 export default class Room extends RoomProps {
-
-  constructor(){
+  constructor() {
     super();
     this.selectHost = false;
-
   }
 
-  tryTransferHost(userId:number){
-    if (!this.selectHost){
+  tryTransferHost(userId: number) {
+    if (!this.selectHost) {
       return;
     }
     console.log("Transfering host to", userId);
-    new InternalMessage(TO.BACKGROND, CMD.TRANSFERHOST )
-    .addArgs(userId)
-    .send();
+    new InternalMessage(TO.BACKGROND, CMD.TRANSFERHOST).addArgs(userId).send();
     this.selectHost = false;
-
   }
 
-  selectHost: boolean
-  leaveRoom(){
-    this.$emit("leaveRoom")
+  selectHost: boolean;
+  leaveRoom() {
+    this.$emit("leaveRoom");
   }
 
-  transferHostInit(){
+  transferHostInit() {
     this.selectHost = true;
   }
 
-  userIcon(state:boolean){
-    if (!state){
+  userIcon(state: boolean) {
+    if (!state) {
       return "person_outline";
     }
-    return "double_arrow"
+    return "double_arrow";
   }
 
-  isHost(user:any){
+  isHost(user: any) {
     return user.host;
   }
-
 }
 </script>
 
 <style lang="css">
-
 #play {
-  color:#046F55;
+  color: #046f55;
 }
-#room-id span{
-  color:black;
+#room-id span {
+  color: black;
 }
 
-#report-bug{
+#report-bug {
   position: absolute;
   width: 118px;
   height: 35px;
@@ -101,60 +113,60 @@ export default class Room extends RoomProps {
 
   /* identical to box height, or 146% */
 
-  color: #046F55;
-  bottom:9px;
-  left:321px;
+  color: #046f55;
+  bottom: 9px;
+  left: 321px;
 }
 #room-id {
-position: absolute;
-width: 162px;
-height: 67px;
-left:10px;
-top:100px;
-margin:0;
+  position: absolute;
+  width: 162px;
+  height: 67px;
+  left: 10px;
+  top: 100px;
+  margin: 0;
 
-font-family: Roboto;
-font-style: normal;
-font-weight: normal;
-font-size: 36px;
-line-height: 35px;
-text-align:left;
+  font-family: Roboto;
+  font-style: normal;
+  font-weight: normal;
+  font-size: 36px;
+  line-height: 35px;
+  text-align: left;
 
-/* or 97% */
+  /* or 97% */
 
-color: #AAAAAA;
+  color: #aaaaaa;
 }
 #leave {
   position: absolute;
-  top:192px;
-  left:260px;
+  top: 192px;
+  left: 260px;
   width: 156px;
-height: 38px;
+  height: 38px;
 }
 
 #selhost {
-  position:absolute;
-  top:253px;
+  position: absolute;
+  top: 253px;
   width: 156px;
   height: 38px;
-  left:260px;
+  left: 260px;
 }
 
-#users-in-room{
+#users-in-room {
   position: absolute;
   width: 216px;
   height: 200px;
-  border:1px solid #BABABA;
+  border: 1px solid #bababa;
   top: 192px;
   left: 10px;
 }
 
 .clickable {
-  cursor:pointer;
+  cursor: pointer;
 }
-.user{
- width: 217px;
- text-align:left;
+.user {
+  width: 217px;
+  text-align: left;
   height: 35px;
 
   font-family: Roboto;
@@ -165,7 +177,7 @@ height: 38px;
 }
 
 .user.me {
-  color: #046F4F;
+  color: #046f4f;
 }
 #now-playing {
   position: absolute;
@@ -177,17 +189,17 @@ height: 38px;
   font-weight: normal;
   font-size: 36px;
   line-height: 35px;
-  text-align:left;
+  text-align: left;
 
-  top:407px;
-  left:10px;
+  top: 407px;
+  left: 10px;
 
-  color: #AAAAAA;
+  color: #aaaaaa;
 }
 #now-playing span {
   color: black;
 }
 p {
-  margin:0;
+  margin: 0;
 }
 </style>
