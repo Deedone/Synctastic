@@ -2,9 +2,9 @@
   <div id="app" style="height: 400px;">
     <div class="topbar">
       {{ topbarTitle[state.stage] }}
-      <button class="topbar-button" @click="toggleDebug">
+      <a href="https://github.com/Deedone/Synctastic#running" target="_blank" class="topbar-button" >
         <i class="material-icons" id="topbar-button-icon">help_outline</i>
-      </button>
+      </a>
     </div>
     <div v-if="!debug">
       <NameSelect
@@ -20,6 +20,7 @@
         v-if="state.stage == 'join'"
         @setStage="setStage"
         @joinRoom="joinRoom"
+        :state="state"
       ></JoinRoom>
       <Room
         v-if="state.stage == 'room'"
@@ -73,6 +74,7 @@ export default class App extends Vue {
     stage: "name",
     name: "",
     serverCurrent: undefined,
+    errors : [] as string[],
   };
   debug = false;
   topbarTitle = {
@@ -146,9 +148,12 @@ export default class App extends Vue {
   }
 
   joinRoom(id: string | number) {
+    this.state.errors = [] as string[];
+    
     console.log("Join room");
     if (isNaN(id as number)) {
       console.log("Invalid ID");
+      this.state.errors = ["ID must be a number"]
       return;
     }
     new InternalMessage(TO.BACKGROND, CMD.INIT).send();

@@ -83,6 +83,11 @@ func (c *Client) handleMsg(msg string) {
 		res := c.lobby.joinRoom(int(m.IntArg), c)
 		if !res {
 			fmt.Println("Joining failed")
+			var m Message
+			m.Cmd = "badId"
+			mstr, _ := json.Marshal(m)
+			c.wsout <- string(mstr)
+
 		}
 	case "broadcast":
 		if c.host && c.room != nil {

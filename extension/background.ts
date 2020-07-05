@@ -5,7 +5,6 @@ import {
   VideoState,
   TO,
   CMD,
-  VIDEOSTATUS,
   PageInfo,
 } from "./internal_message";
 
@@ -26,6 +25,7 @@ interface state {
   serverCurrent: undefined | VideoInfo;
   name: string;
   vidstate: VideoState;
+  errors: string[];
 }
 let state: state = {
   netstatus: "",
@@ -38,6 +38,7 @@ let state: state = {
   serverCurrent: undefined,
   name: "",
   vidstate: new VideoState("unknown", 0),
+  errors: [],
 };
 let tabs = new Map<Number, PageInfo>();
 
@@ -49,7 +50,7 @@ setInterval(() => {
     return;
   }
   keepalive();
-}, 1000 * 60 * 20); //20 minutes
+}, 1000 * 60 * 14); //14 minutes
 
 //Init state
 chrome.storage.local.get("state", (items) => {
@@ -91,9 +92,24 @@ function keepalive() {
   xhr.send();
 }
 
+function deinit() {
+  state.host = false;
+  state.roomId = 0;
+  state.roomUserCount = 0;
+  state.roomUsers = [];
+  state.stage = "lobby";
+  state.host = false;
+  state.netstatus = "Online";
+  if (watchdog > -1) {
+    clearTimeout(watchdog);
+  }
+  updateView();
+}
+
 function setupWs(addr: string) {
   ws = new WebSocket(addr);
   ws.onmessage = onWsMessage;
+//  ws.onerror  = deinit;
 }
 
 function isValidId(id: number | undefined): boolean {
@@ -177,7 +193,8 @@ function onWsMessage(msg: any) {
     clearTimeout(watchdog);
   }
   watchdog = setTimeout(() => {
-    state.netstatus = "Offline";
+    ws.close();
+    deinit();
   }, 11000);
 
   console.log(msg.data);
@@ -214,8 +231,7 @@ function onWsMessage(msg: any) {
       state.roomId = 0;
       state.stage = "lobby";
       ws.close();
-      state.host = false;
-      updateView();
+      deinit();
       notifyKick();
       chrome.storage.local.set({ active: 0 });
     case "myId":
@@ -223,6 +239,10 @@ function onWsMessage(msg: any) {
         state.userId = data.intArg as number;
         updateView();
       }
+      break;
+    case "badId":
+      state.errors = ["No such room, maybe you need to create one?"]
+      state.stage = "join";
       break;
     case "youAreHost":
       onMessage(new InternalMessage(TO.BACKGROND, CMD.BECOMEHOST));
@@ -293,14 +313,9 @@ function onMessage(inmsg: any, sender?: any) {
   if (msg.is(CMD.KILL)) {
     if (ws) {
       ws.close();
+      deinit();
     }
     chrome.storage.local.set({ active: 0 });
-    state.roomId = 0;
-    state.roomUserCount = 0;
-    state.roomUsers = [];
-    state.stage = "lobby";
-    updateView();
-    state.host = false;
   }
 
   if (msg.is(CMD.PAGEINFO) && msg.hasArgs(1)) {

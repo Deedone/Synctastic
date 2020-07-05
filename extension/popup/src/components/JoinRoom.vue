@@ -12,6 +12,9 @@
     <button class="rect-button" id="join-room-return" @click="back">
       Back
     </button>
+    <div id="errors" >
+       <p v-for="err in state.errors" :key="err">{{err}}</p> 
+    </div>
   </div>
 </template>
 
@@ -19,10 +22,13 @@
 import Vue from "vue";
 import Component from "vue-class-component";
 
+const JoinProps = Vue.extend({
+  props: ["state"],
+});
 @Component({
   name: "JoinRoom",
 })
-export default class JoinRoom extends Vue {
+export default class JoinRoom extends JoinProps {
   enteredId = "";
 
   enter() {
@@ -54,5 +60,12 @@ export default class JoinRoom extends Vue {
   position: absolute;
   top: 146px;
   left: 21px;
+}
+#errors {
+  color:red;
+  position: absolute;
+  top:223px;
+  left:21px;
+
 }
 </style>
