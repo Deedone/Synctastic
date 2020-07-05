@@ -86,6 +86,9 @@ func (r *Room) setHost(id int) {
 }
 
 func (r *Room) broadcast(msg string, nohost bool) {
+	if r == nil {
+		return
+	}
 	r.clientsGuard.Lock()
 	for client := range r.clients {
 		if client.host && nohost {
