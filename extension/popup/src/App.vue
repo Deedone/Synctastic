@@ -3,7 +3,7 @@
     <div class="topbar">
       {{topbarTitle[state.stage]}}
       <button class="topbar-button">
-        <i class="material-icons" id="topbar-button-icon">help_outline</i>
+        <i class="material-icons" id="topbar-button-icon" href="https://github.com/Deedone/Synctastic#running" target="_blank">help_outline</i>
       </button>
     </div class="popupBody">
       <div v-if="!debug">
@@ -67,7 +67,7 @@ export default class App extends Vue {
   debug = false
   topbarTitle = {
     "name": "Getting started",
-    "lobby": "Wellcome",
+    "lobby": "Welcome",
     "join": "Enter room id",
     "room": "In room",
   }
