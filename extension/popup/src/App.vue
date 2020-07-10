@@ -3,7 +3,9 @@
     <div class="topbar">
       {{topbarTitle[state.stage]}}
       <button class="topbar-button">
-        <i class="material-icons" id="topbar-button-icon" href="https://github.com/Deedone/Synctastic#running" target="_blank">help_outline</i>
+        <a href="https://github.com/Deedone/Synctastic#" target="_blank">
+          <i class="material-icons" id="topbar-button-icon">help_outline</i>
+        </a>
       </button>
     </div class="popupBody">
       <div v-if="!debug">
