@@ -3,7 +3,7 @@
     <div class="topbar">
       {{topbarTitle[state.stage]}}
       <button class="topbar-button">
-        <a href="https://github.com/Deedone/Synctastic#" target="_blank">
+        <a href="https://github.com/Deedone/Synctastic#running" target="_blank">
           <i class="material-icons" id="topbar-button-icon">help_outline</i>
         </a>
       </button>
@@ -17,6 +17,7 @@
         ></Lobby>
         <JoinRoom v-if="state.stage == 'join'"
           @setStage="setStage"
+          :state="state"
          @joinRoom="joinRoom"></JoinRoom>
          <Room v-if="state.stage == 'room'"
                 :state="state"
