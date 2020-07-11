@@ -1,13 +1,8 @@
 <template>
-  <div style="padding-top: 25px;">
-    <p class="generic-text">Enter your name</p>
-    <br />
-    <input
-      class="input"
-      type="text"
-      placeholder="John Doe"
-      v-model="enteredName"
-    />
+  <div class="popupBody">
+    <p class="generic-text">Enter your name</p><br>
+    <input class="input" type="text" placeholder="John Doe" v-model="enteredName">
+    <p class="secondary-text">The name is not unique and you will be able to change it later</p>
     <button class="rect-button" @click="enter">Enter</button>
   </div>
 </template>

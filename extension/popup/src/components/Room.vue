@@ -1,32 +1,17 @@
 <template>
-  <div>
-    <p id="room-id">
-      Room ID:<br />
-      <span>{{ state.roomId }}</span>
-    </p>
-    <br />
-    <button @click="leaveRoom" class="rect-button" id="leave">
-      Leave room
-    </button>
-    <button
-      v-if="state.host"
-      @click="transferHostInit"
-      class="rect-button"
-      id="selhost"
-    >
-      Change host
-    </button>
+  <div class="popupBody">
+    <p id="room-id">Room ID:<br> <span>{{state.roomId}}</span></p><br>
+    <button @click="leaveRoom" class="rect-button" id="leave">Leave room</button>
+    <button v-if="state.host" @click="transferHostInit" class="rect-button" id="selhost">Change host</button>
     <div id="users-in-room">
       <div>
-        <p
-          v-for="user in state.roomUsers"
-          @click="tryTransferHost(user.id)"
-          :key="user.id"
-          v-bind:class="{ me: isHost(user), clickable: selectHost }"
-          class="user"
-        >
-          <i class="material-icons">{{ userIcon(selectHost) }}</i>
-          {{ user.name }}
+        <p v-for="user in state.roomUsers"
+        @click="tryTransferHost(user.id)"
+        :key="user.id"
+        v-bind:class="{me:isHost(user), clickable:selectHost}"
+        class="user" >
+          <i class="material-icons" >{{userIcon(selectHost)}}</i>
+          {{user.name}}
         </p>
       </div>
     </div>
@@ -101,79 +86,74 @@ export default class Room extends RoomProps {
 
 #report-bug {
   position: absolute;
-  width: 118px;
+  width: 100px;
   height: 35px;
   text-decoration: underline;
 
   font-family: Roboto;
   font-style: normal;
   font-weight: normal;
-  font-size: 24px;
-  line-height: 35px;
+  font-size: 18px;
+  line-height: 20px;
 
   /* identical to box height, or 146% */
 
-  color: #046f55;
-  bottom: 9px;
-  left: 321px;
+  color: #046F55;
+  bottom:5px;
+  left: 190px;
 }
 #room-id {
-  position: absolute;
-  width: 162px;
-  height: 67px;
-  left: 10px;
-  top: 100px;
-  margin: 0;
+position: absolute;
+width: 100px;
+height: 50px;
+left:10px;
+top:65px;
+margin:0;
 
-  font-family: Roboto;
-  font-style: normal;
-  font-weight: normal;
-  font-size: 36px;
-  line-height: 35px;
-  text-align: left;
+font-family: Roboto;
+font-style: normal;
+font-weight: normal;
+font-size: 22px;
+line-height: 25px;
+text-align:left;
 
-  /* or 97% */
+/* or 97% */
 
-  color: #aaaaaa;
+color: #AAAAAA;
 }
 #leave {
   position: absolute;
-  top: 192px;
-  left: 260px;
-  width: 156px;
-  height: 38px;
+  top:132px;
+  left:150px;
 }
 
 #selhost {
-  position: absolute;
-  top: 253px;
-  width: 156px;
-  height: 38px;
-  left: 260px;
+  position:absolute;
+  top:175px;
+  left:150px;
 }
 
 #users-in-room {
   position: absolute;
-  width: 216px;
-  height: 200px;
-  border: 1px solid #bababa;
-  top: 192px;
+  width: 120px;
+  height: 150px;
+  border:1px solid #BABABA;
+  top: 140px;
   left: 10px;
 }
 
 .clickable {
   cursor: pointer;
 }
-.user {
-  width: 217px;
-  text-align: left;
-  height: 35px;
-
+.user{
+ width: 217px;
+ text-align:left;
+  height: 30px;
   font-family: Roboto;
   font-style: normal;
   font-weight: normal;
-  font-size: 24px;
-  line-height: 35px;
+  font-size: 20px;
+  line-height: 30px;
 }
 
 .user.me {
@@ -181,18 +161,18 @@ export default class Room extends RoomProps {
 }
 #now-playing {
   position: absolute;
-  width: 424px;
+  width: 280px;
   height: 122px;
 
   font-family: Roboto;
   font-style: normal;
   font-weight: normal;
-  font-size: 36px;
-  line-height: 35px;
-  text-align: left;
+  font-size: 18px;
+  line-height: 20px;
+  text-align:left;
 
-  top: 407px;
-  left: 10px;
+  top:300px;
+  left:10px;
 
   color: #aaaaaa;
 }
