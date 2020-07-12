@@ -57,7 +57,7 @@ export default class JoinRoom extends JoinProps {
 #errors {
   color:red;
   position: absolute;
-  top:223px;
+  top:243px;
   left:21px;
 
 }

@@ -1,5 +1,5 @@
 <template>
-  <div id="app" style="height: 400px;">
+  <div id="app">
     <div class="topbar">
       {{topbarTitle[state.stage]}}
       <button class="topbar-button">
@@ -10,7 +10,8 @@
     </div class="popupBody">
       <div v-if="!debug">
         <NameSelect v-if="state.stage == 'name'"
-         @nameChanged="changeName" ></NameSelect>
+         @nameChanged="changeName"
+         :state="state" ></NameSelect>
         <Lobby v-if="state.stage == 'lobby'"
           @setStage="setStage"
           @createRoom="createRoom"
@@ -85,14 +86,30 @@ export default class App extends Vue {
   }
 
   isValidName(name: string): boolean {
-    return typeof name == typeof "" && name.length > 0;
+    if (typeof name != typeof "") {
+      return false;
+    }
+    if (name.length > 20) {
+      this.state.errors = ["Name should be less than 20 characters long"];
+      return false;
+    }
+    if (name.length < 1 ) {
+      this.state.errors = ["Please enter a name"];
+      return false;
+    }
+    return true;
   }
   changeName(name: string) {
     console.log(name);
     if (!this.isValidName(name)) {
       return;
     }
+    this.state.errors = [];
     new InternalMessage(TO.BACKGROND, CMD.SETNAME).addArgs(name).send();
+  }
+
+  setBodyClass() {
+    document.body.className = this.state.stage;
   }
 
   setStage(stage: string) {
@@ -102,6 +119,7 @@ export default class App extends Vue {
     if (stage == "lobby") {
       this.state.stage = stage;
     }
+    this.setBodyClass();
   }
 
   beforeMount() {
@@ -133,6 +151,7 @@ export default class App extends Vue {
     if (!this.isValidName(this.state.name)) {
       this.state.stage = "name";
     }
+    this.setBodyClass();
     //this.state.stage = "room";
   }
 
@@ -180,10 +199,27 @@ export default class App extends Vue {
 html, body {
   font-family: 'Roboto', sans-serif;
   width: 300px;
-  height: 500px;
+  /* height: 500px; */
   margin: 0px;
   padding: 0px;
   border: none;
+  transition: height 0.3s;
+  transition-delay: 0;
+  transition-timing-function: ease-out;
+
+}
+
+body.lobby {
+  height: 170px;
+}
+body.name {
+  height: 270px;
+}
+body.join {
+  height: 240px;
+}
+body.room {
+  height: 450px;
 }
 
 * {

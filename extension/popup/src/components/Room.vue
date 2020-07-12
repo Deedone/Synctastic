@@ -146,9 +146,8 @@ color: #AAAAAA;
   cursor: pointer;
 }
 .user{
- width: 217px;
+ width: 120px;
  text-align:left;
-  height: 30px;
   font-family: Roboto;
   font-style: normal;
   font-weight: normal;
