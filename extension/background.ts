@@ -42,7 +42,7 @@ let state: state = {
 };
 let tabs = new Map<Number, PageInfo>();
 
-const URL = "wss://synctastic.herokuapp.com/";
+const URL = "wss://synctastic.herokuapp.com";
 //const URL = "ws://127.0.0.1:1313";
 //Keep server alive
 setInterval(() => {
