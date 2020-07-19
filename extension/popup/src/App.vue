@@ -2,7 +2,13 @@
   <div id="app">
     <div class="topbar">
       {{topbarTitle[state.stage]}}
-      <button class="topbar-button">
+      <button class="topbar-button" id="tb1" @click="toggleSettings">
+          <i class="material-icons" id="settings-icon"
+          :class="[settingsClass]" 
+          
+          >settings</i>
+      </button>
+      <button class="topbar-button" id="tb2">
         <a href="https://github.com/Deedone/Synctastic#running" target="_blank">
           <i class="material-icons" id="topbar-button-icon">help_outline</i>
         </a>
@@ -24,6 +30,9 @@
                 :state="state"
                 @leaveRoom="leaveRoom"
          ></Room>
+         <Settings v-if="state.stage == 'settings'"
+                :state="state"
+                ></Settings>
       </div>
       <Debug v-else :state="state"></Debug>
   </div>
@@ -38,6 +47,7 @@ import Lobby from "./components/lobby.vue";
 import NameSelect from "./components/NameSelect.vue";
 import JoinRoom from "./components/JoinRoom.vue";
 import Room from "./components/Room.vue";
+import Settings from "./components/Settings.vue";
 
 import {
   InternalMessage,
@@ -56,6 +66,7 @@ import {
     NameSelect,
     JoinRoom,
     Room,
+    Settings,
   },
 })
 export default class App extends Vue {
@@ -73,12 +84,15 @@ export default class App extends Vue {
     serverCurrent: undefined,
     errors : [] as string[],
   };
+  oldStage = "";
+  settingsClass = "";
   debug = false;
   topbarTitle = {
     "name": "Getting started",
     "lobby": "Welcome",
     "join": "Enter room id",
     "room": "In room",
+    "settings": "Settings",
   }
 
   toggleDebug() {
@@ -99,6 +113,20 @@ export default class App extends Vue {
     }
     return true;
   }
+
+  toggleSettings(){
+    console.log("toggle settings");
+    if(this.state.stage == "settings"){
+      this.setStage(this.oldStage);
+      this.settingsClass = "";
+    }else{
+      this.oldStage = this.state.stage;
+      this.setStage("settings");
+      this.settingsClass = "active";
+    }
+
+    console.log(this.state.stage);
+  }
   changeName(name: string) {
     console.log(name);
     if (!this.isValidName(name)) {
@@ -113,12 +141,7 @@ export default class App extends Vue {
   }
 
   setStage(stage: string) {
-    if (stage == "join") {
-      this.state.stage = stage;
-    }
-    if (stage == "lobby") {
-      this.state.stage = stage;
-    }
+    this.state.stage = stage;
     this.setBodyClass();
   }
 
@@ -138,6 +161,9 @@ export default class App extends Vue {
       for (let key in changes) {
         if (key == "state") {
           console.log("State key correct");
+          if (this.state.stage == "settings") {
+            changes[key].newValue.stage = "settings";
+          }
           this.state = changes[key].newValue;
           console.log(this.state);
           this.processInitialData();
@@ -199,7 +225,6 @@ export default class App extends Vue {
 html, body {
   font-family: 'Roboto', sans-serif;
   width: 300px;
-  /* height: 500px; */
   margin: 0px;
   padding: 0px;
   border: none;
@@ -221,6 +246,9 @@ body.join {
 body.room {
   height: 450px;
 }
+body.settings {
+  height: 170px;
+}
 
 * {
   box-sizing: border-box;
@@ -231,6 +259,17 @@ body.room {
   -moz-osx-font-smoothing: grayscale;*/
   width: 100%;
   background-color: #fefefe;
+}
+
+#settings-icon {
+
+  color: white;
+  transform: rotate(0deg);
+  transition-property: transform;
+  transition-duration: 1s;
+}
+#settings-icon.active {
+  transform: rotate(120deg);
 }
 
 .popupBody {
@@ -252,13 +291,20 @@ body.room {
   padding-right: 20px;
   vertical-align: middle;
 }
+#tb1 {
+
+  right: 50px;
+}
+#tb2 {
+
+  right: 18px;
+}
 .topbar-button {
   background: transparent;
   width: 20px;
   height: 25px;
   border: 1px black;
   position: absolute;
-  right: 18px;
   top: 15px;
   display: inline-block;
   vertical-align: middle;

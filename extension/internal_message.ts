@@ -23,6 +23,7 @@ export enum CMD {
   CLEARVIDEOS,
   TRANSFERHOST,
   POPUPOPEN,
+  SETTING,
 }
 
 export enum VIDEOSTATUS {
@@ -45,7 +46,7 @@ export interface VideoInfo {
 }
 
 type ARGS = ARG[];
-type ARG = string | number | VideoState | VideoInfo | PageInfo;
+type ARG = string | number | VideoState | VideoInfo | PageInfo | boolean;
 
 export class VideoState {
   timestamp: number;

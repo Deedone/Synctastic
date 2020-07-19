@@ -26,6 +26,15 @@ interface state {
   name: string;
   vidstate: VideoState;
   errors: string[];
+  settings: settings;
+}
+interface settings {
+  hostNotify: boolean;
+  leaveNotify: boolean;
+}
+let defaultSettings: settings = {
+    hostNotify: true,
+    leaveNotify: true,
 }
 let state: state = {
   netstatus: "",
@@ -39,6 +48,7 @@ let state: state = {
   name: "",
   vidstate: new VideoState("unknown", 0),
   errors: [],
+  settings: defaultSettings,
 };
 let tabs = new Map<Number, PageInfo>();
 
@@ -55,6 +65,7 @@ setInterval(() => {
 //Init state
 chrome.storage.local.get("state", (items) => {
   state.name = items?.state?.name || "";
+  state.settings = items?.state?.settings || defaultSettings;
 
   chrome.storage.local.set({ active: 0, state: state });
 });
@@ -263,6 +274,9 @@ function onWsMessage(msg: any) {
 }
 
 function notifyKick() {
+  if (!state.settings.leaveNotify){
+    return;
+  }
   chrome.notifications.create("host", {
     type: "basic",
     iconUrl: "images/logo3128.png",
@@ -272,6 +286,9 @@ function notifyKick() {
 }
 
 function notifyHost() {
+  if (!state.settings.hostNotify){
+    return;
+  }
   chrome.notifications.create("host", {
     type: "basic",
     iconUrl: "images/logo3128.png",
@@ -440,6 +457,20 @@ function onMessage(inmsg: any, sender?: any) {
       m.cmd = "createRoom";
       ws.send(m.json());
     });
+  }
+
+  if (msg.is(CMD.SETTING) && msg.hasArgs(2)){
+    switch(msg.args[0]){
+        case 'hostNotify':
+          state.settings.hostNotify = msg.args[1] as boolean;
+          break;
+        case 'leaveNotify':
+          state.settings.leaveNotify = msg.args[1] as boolean;
+          break;
+        default:
+          console.error("Wrong setting name", msg.args[0])
+    }
+    updateView();
   }
   if (
     msg.is(CMD.JOINROOM) &&
