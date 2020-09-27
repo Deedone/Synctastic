@@ -51,9 +51,10 @@ let state: state = {
   settings: defaultSettings,
 };
 let tabs = new Map<Number, PageInfo>();
+let reallyClose = false;
 
-const URL = "wss://synctastic.herokuapp.com";
-//const URL = "ws://127.0.0.1:1313";
+//const URL = "wss://synctastic.herokuapp.com";
+const URL = "ws://127.0.0.1:1313";
 //Keep server alive
 setInterval(() => {
   if (!state.host) {
@@ -117,10 +118,58 @@ function deinit() {
   updateView();
 }
 
+
+let retryCount = 0;
+let reconnecting = false;
+function tryReconnect(){
+  reconnecting = false;
+  if(retryCount > 7){
+    return;
+  }
+  reconnecting = true;
+  console.log("Reconnecting")
+  retryCount++;
+
+  setupWs(URL);
+  awaitSocket(() => {
+    let msg = new WsMessage();
+    msg.cmd = "setName";
+    msg.strArg = state.name;
+    ws.send(msg.json());
+    awaitSocket(() => {
+      let msg = new WsMessage();
+      msg.cmd = "rejoin";
+      msg.strArg = JSON.stringify({room:state.roomId, host:state.host});
+      ws.send(msg.json());
+      retryCount = 0;
+    reconnecting = false;
+    });
+  });
+}
+
+function shutdown(){
+  reallyClose = true;
+  ws.close();
+}
+
+
 function setupWs(addr: string) {
   ws = new WebSocket(addr);
   ws.onmessage = onWsMessage;
-//  ws.onerror  = deinit;
+  ws.onerror  = (err) => {
+    console.error("WS ERROR", err);
+    console.error("TIMEOUT IS", 400 * retryCount);
+    ws.onclose = null;
+    setTimeout(tryReconnect, 400 * retryCount)
+  }
+  ws.onclose = () => {
+    if (reallyClose) {
+      reallyClose = false;
+      return;
+    }
+    console.error("ws close")
+    setTimeout(tryReconnect, 400 * retryCount)
+  }
 }
 
 function isValidId(id: number | undefined): boolean {
@@ -195,6 +244,17 @@ function selectVideo(vid: VideoInfo) {
   updateView();
 }
 
+const watchdogTimeot = 11000;
+function onWatchDog() {
+    if(reconnecting){
+      watchdog = setTimeout(onWatchDog, watchdogTimeot);
+      return;
+    }
+    console.log("watchdog bad")
+    shutdown();
+    deinit();
+}
+
 function onWsMessage(msg: any) {
   if (ws.readyState != ws.OPEN) {
     return;
@@ -203,10 +263,7 @@ function onWsMessage(msg: any) {
   if (watchdog > -1) {
     clearTimeout(watchdog);
   }
-  watchdog = setTimeout(() => {
-    ws.close();
-    deinit();
-  }, 11000);
+  watchdog = setTimeout(onWatchDog, watchdogTimeot);
 
   console.log(msg.data);
   let data = new WsMessage(msg.data);
@@ -241,7 +298,7 @@ function onWsMessage(msg: any) {
     case "kick":
       state.roomId = 0;
       state.stage = "lobby";
-      ws.close();
+      shutdown();
       deinit();
       notifyKick();
       chrome.storage.local.set({ active: 0 });
@@ -324,12 +381,13 @@ function onMessage(inmsg: any, sender?: any) {
       msg.cmd = "setName";
       msg.strArg = state.name;
       ws.send(msg.json());
+      retryCount = 0;
     });
     chrome.storage.local.set({ active: 1 });
   }
   if (msg.is(CMD.KILL)) {
     if (ws) {
-      ws.close();
+      shutdown();
       deinit();
     }
     chrome.storage.local.set({ active: 0 });

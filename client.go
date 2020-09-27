@@ -29,6 +29,11 @@ type Message struct {
 	StrArg string  `json:"strArg"`
 }
 
+type RejoinCmd struct {
+	Room int  `json:"room"`
+	Host bool `json:"host"`
+}
+
 func fromWS(ws *websocket.Conn) *Client {
 	c := Client{
 		ws:       ws,
@@ -105,6 +110,23 @@ func (c *Client) handleMsg(msg string) {
 		c.room.setHost(int(m.IntArg))
 	case "pong":
 		c.hadPong = true
+	case "rejoin":
+		var r RejoinCmd
+		err := json.Unmarshal([]byte(m.StrArg), &r)
+		if err != nil {
+			fmt.Println("Error parsing rejoin cmd")
+			return
+		}
+		res := c.lobby.joinRoom(r.Room, c)
+		if !res {
+			fmt.Println("Error rejoining room is dead")
+			return
+		}
+		if r.Host {
+			c.room.clearHosts()
+			c.room.setHost(c.id)
+		}
+		fmt.Println("Reconnected")
 
 	default:
 		fmt.Println("Unkniown command", m.Cmd)
