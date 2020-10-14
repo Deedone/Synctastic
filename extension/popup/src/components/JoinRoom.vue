@@ -1,8 +1,8 @@
 <template>
-  <div class="popupBody">
-    <p class="generic-text">Room ID</p>
+  <div>
+    <p class="generic-text" style="margin-left:20px" >Room ID</p>
     <input type="text" class="input" id="room-id-input" placeholder="0000" v-model="enteredId">
-    <p class="secondary-text" style="position: absolute; top: 90px;">Enter the ID of an existing room</p>
+    <p class="secondary-text" style="position: absolute; top: 90px; left:20px">Enter the ID of an existing room</p>
     <button class="rect-button" id="join-room" @click="enter">Enter</button>
     <button class="rect-button" id="join-room-return" @click="back">
       Back
@@ -52,6 +52,7 @@ export default class JoinRoom extends JoinProps {
 #room-id-input {
   position:absolute;
   top:120px;
+  width: 256px;
   left:21px;
 }
 #errors {

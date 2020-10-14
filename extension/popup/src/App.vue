@@ -13,13 +13,15 @@
           <i class="material-icons" id="topbar-button-icon">help_outline</i>
         </a>
       </button>
-    </div class="popupBody">
-      <div v-if="!debug">
+    </div>
+    <div class="popupBody">
+      <template v-if="!debug">
         <NameSelect v-if="state.stage == 'name'"
          @nameChanged="changeName"
          :state="state" ></NameSelect>
         <Lobby v-if="state.stage == 'lobby'"
           @setStage="setStage"
+          :state="state"
           @createRoom="createRoom"
         ></Lobby>
         <JoinRoom v-if="state.stage == 'join'"
@@ -32,9 +34,11 @@
          ></Room>
          <Settings v-if="state.stage == 'settings'"
                 :state="state"
+         @nameChanged="changeName"
                 ></Settings>
-      </div>
+      </template>
       <Debug v-else :state="state"></Debug>
+  </div>
   </div>
 </template>
 
@@ -87,6 +91,7 @@ export default class App extends Vue {
   oldStage = "";
   settingsClass = "";
   debug = false;
+  storedName = "";
   topbarTitle = {
     "name": "Getting started",
     "lobby": "Welcome",
@@ -152,6 +157,7 @@ export default class App extends Vue {
     chrome.storage.local.get("state", (resp) => {
       if (typeof resp.state == typeof {}) {
         this.state = resp.state;
+        console.log(resp.state)
         this.processInitialData();
       }
     });
@@ -175,6 +181,7 @@ export default class App extends Vue {
   processInitialData() {
     console.log("Got name from state", this.state.name);
     if (!this.isValidName(this.state.name)) {
+      console.log("Invalid name")
       this.state.stage = "name";
     }
     this.setBodyClass();
@@ -247,7 +254,7 @@ body.room {
   height: 450px;
 }
 body.settings {
-  height: 170px;
+  height: 250px;
 }
 
 * {
@@ -273,8 +280,6 @@ body.settings {
 }
 
 .popupBody {
-  text-align: left;
-  padding-left: 20px;
   padding-top: 20px;
 }
 .topbar {

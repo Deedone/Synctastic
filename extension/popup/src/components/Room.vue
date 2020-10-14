@@ -124,22 +124,24 @@ color: #AAAAAA;
 #leave {
   position: absolute;
   top:132px;
-  left:150px;
+  left:165px;
 }
 
 #selhost {
   position:absolute;
   top:175px;
-  left:150px;
+  left:165px;
 }
 
 #users-in-room {
-  position: absolute;
-  width: 120px;
-  height: 150px;
-  border:1px solid #BABABA;
-  top: 140px;
-  left: 10px;
+    position: absolute;
+    width: 140px;
+    height: 150px;
+    border: 1px solid #BABABA;
+    top: 140px;
+    left: 10px;
+    overflow-x: hidden;
+    overflow-y: scroll;
 }
 
 .clickable {

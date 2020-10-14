@@ -1,12 +1,12 @@
 <template>
-  <div class="popupBody">
+  <div style="text-align: left; padding-left:20px">
     <p class="generic-text">Enter your name</p><br>
     <input class="input" type="text" placeholder="John Doe" v-model="enteredName"
       autofocus
       @keyup="onkeyup"
     
     >
-    <p class="secondary-text">The name is not unique and you will be able to change it later</p>
+    <p class="secondary-text">You can always change it in the settings</p>
     <button class="rect-button" @click="enter">Enter</button>
     <div id="errors" >
        <p v-for="err in state.errors" :key="err">{{err}}</p> 
@@ -25,7 +25,7 @@ const SelectProps = Vue.extend({
   name: "NameSelect",
 })
 export default class NameSelect extends SelectProps {
-  enteredName = "";
+  enteredName = this.state.name;
 
   enter() {
     console.log("Enered name is ", this.enteredName);
@@ -40,4 +40,5 @@ export default class NameSelect extends SelectProps {
 }
 </script>
 
-<style lang="css"></style>
+<style lang="css">
+</style>

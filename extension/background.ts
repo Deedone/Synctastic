@@ -43,7 +43,7 @@ let state: state = {
   roomId: 0,
   roomUserCount: 0,
   roomUsers: [],
-  stage: "name",
+  stage: "lobby",
   serverCurrent: undefined,
   name: "",
   vidstate: new VideoState("unknown", 0),
@@ -53,8 +53,8 @@ let state: state = {
 let tabs = new Map<Number, PageInfo>();
 let reallyClose = false;
 
-//const URL = "wss://synctastic.herokuapp.com";
-const URL = "ws://127.0.0.1:1313";
+const URL = "wss://synctastic.herokuapp.com";
+//const URL = "ws://127.0.0.1:1313";
 //Keep server alive
 setInterval(() => {
   if (!state.host) {
@@ -123,7 +123,7 @@ let retryCount = 0;
 let reconnecting = false;
 function tryReconnect(){
   reconnecting = false;
-  if(retryCount > 7){
+  if(retryCount > 20){
     return;
   }
   reconnecting = true;
@@ -158,9 +158,9 @@ function setupWs(addr: string) {
   ws.onmessage = onWsMessage;
   ws.onerror  = (err) => {
     console.error("WS ERROR", err);
-    console.error("TIMEOUT IS", 400 * retryCount);
+    console.error("TIMEOUT IS", 300 * retryCount);
     ws.onclose = null;
-    setTimeout(tryReconnect, 400 * retryCount)
+    setTimeout(tryReconnect, 300 * retryCount)
   }
   ws.onclose = () => {
     if (reallyClose) {
@@ -168,7 +168,7 @@ function setupWs(addr: string) {
       return;
     }
     console.error("ws close")
-    setTimeout(tryReconnect, 400 * retryCount)
+    setTimeout(tryReconnect, 300 * retryCount)
   }
 }
 
@@ -246,6 +246,12 @@ function selectVideo(vid: VideoInfo) {
 
 const watchdogTimeot = 11000;
 function onWatchDog() {
+    if (ws.readyState == ws.OPEN){
+      //watchdog = setTimeout(onWatchDog, watchdogTimeot);
+      //Force trigger reconnect
+      ws.close();
+      return;
+    }
     if(reconnecting){
       watchdog = setTimeout(onWatchDog, watchdogTimeot);
       return;

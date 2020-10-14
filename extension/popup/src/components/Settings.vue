@@ -20,6 +20,17 @@
           <span class="slider round"></span>
         </label>
       </div>
+        <p class="text">
+          Name
+        </p>
+      <input class="input" type="text" placeholder="John Doe" v-model="enteredName"
+        @keyup="onkeyup"
+        @change="enter"
+      
+      >
+      <div id="errors" >
+        <p v-for="err in state.errors" :key="err">{{err}}</p> 
+      </div>
   </div>
 </template>
 
@@ -37,6 +48,7 @@ const SettingsProps = Vue.extend({
 export default class Settings extends SettingsProps {
   hostNotify:boolean = this.state.settings.hostNotify;
   leaveNotify:boolean = this.state.settings.leaveNotify;
+  enteredName:string = this.state.name;
 
   sendSettings() {
     console.log("Send settings");
@@ -50,6 +62,16 @@ export default class Settings extends SettingsProps {
     .send();
   }
 
+  enter() {
+    console.log("Enered name is ", this.enteredName);
+    this.$emit("nameChanged", this.enteredName);
+  }
+
+  onkeyup(event:any) {
+    if (event.keyCode == 13) {
+      this.enter();
+    }
+  }
 
 }
 
