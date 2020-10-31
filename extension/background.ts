@@ -8,12 +8,13 @@ import {
   PageInfo,
 } from "./internal_message";
 
+import Network from "./network";
+
 
 chrome.runtime.onMessage.addListener(onMessage);
-let watchdog = -1;
-let ws: WebSocket;
 let videos: VideoInfo[] = [];
 let curVideo: VideoInfo | undefined;
+let net: Network | undefined;
 interface state {
   netstatus: string;
   host: boolean;
@@ -51,9 +52,9 @@ let state: state = {
   settings: defaultSettings,
 };
 let tabs = new Map<Number, PageInfo>();
-let reallyClose = false;
 
 const URL = "wss://synctastic.herokuapp.com";
+
 //const URL = "ws://127.0.0.1:1313";
 //Keep server alive
 setInterval(() => {
@@ -111,65 +112,8 @@ function deinit() {
   state.roomUsers = [];
   state.stage = "lobby";
   state.host = false;
-  state.netstatus = "Online";
-  if (watchdog > -1) {
-    clearTimeout(watchdog);
-  }
+  state.netstatus = "Offline";
   updateView();
-}
-
-
-let retryCount = 0;
-let reconnecting = false;
-function tryReconnect(){
-  reconnecting = false;
-  if(retryCount > 20){
-    return;
-  }
-  reconnecting = true;
-  console.log("Reconnecting")
-  retryCount++;
-
-  setupWs(URL);
-  awaitSocket(() => {
-    let msg = new WsMessage();
-    msg.cmd = "setName";
-    msg.strArg = state.name;
-    ws.send(msg.json());
-    awaitSocket(() => {
-      let msg = new WsMessage();
-      msg.cmd = "rejoin";
-      msg.strArg = JSON.stringify({room:state.roomId, host:state.host});
-      ws.send(msg.json());
-      retryCount = 0;
-    reconnecting = false;
-    });
-  });
-}
-
-function shutdown(){
-  reallyClose = true;
-  ws.close();
-}
-
-
-function setupWs(addr: string) {
-  ws = new WebSocket(addr);
-  ws.onmessage = onWsMessage;
-  ws.onerror  = (err) => {
-    console.error("WS ERROR", err);
-    console.error("TIMEOUT IS", 300 * retryCount);
-    ws.onclose = null;
-    setTimeout(tryReconnect, 300 * retryCount)
-  }
-  ws.onclose = () => {
-    if (reallyClose) {
-      reallyClose = false;
-      return;
-    }
-    console.error("ws close")
-    setTimeout(tryReconnect, 300 * retryCount)
-  }
 }
 
 function isValidId(id: number | undefined): boolean {
@@ -180,22 +124,6 @@ function isValidId(id: number | undefined): boolean {
     return false;
   }
   return true;
-}
-
-function awaitSocket(f: Function) {
-  let attempt = 0;
-  let later = setInterval(() => {
-    attempt++;
-    if (attempt > 40) {
-      console.error("Timeout WS connection");
-      clearInterval(later);
-    }
-    if (ws.readyState != ws.OPEN) {
-      return;
-    }
-    f();
-    clearInterval(later);
-  }, 50);
 }
 
 function updateView() {
@@ -244,41 +172,16 @@ function selectVideo(vid: VideoInfo) {
   updateView();
 }
 
-const watchdogTimeot = 11000;
-function onWatchDog() {
-    if (ws.readyState == ws.OPEN){
-      //watchdog = setTimeout(onWatchDog, watchdogTimeot);
-      //Force trigger reconnect
-      ws.close();
-      return;
-    }
-    if(reconnecting){
-      watchdog = setTimeout(onWatchDog, watchdogTimeot);
-      return;
-    }
-    console.log("watchdog bad")
-    shutdown();
-    deinit();
-}
-
-function onWsMessage(msg: any) {
-  if (ws.readyState != ws.OPEN) {
-    return;
-  }
+function onWsMessage(net:Network, data: WsMessage) {
   state.netstatus = "Online";
-  if (watchdog > -1) {
-    clearTimeout(watchdog);
-  }
-  watchdog = setTimeout(onWatchDog, watchdogTimeot);
 
-  console.log(msg.data);
-  let data = new WsMessage(msg.data);
+  console.log(data);
   switch (data.cmd) {
     case "ping":
       console.log("Got ping");
       let msg = new WsMessage();
       msg.cmd = "pong";
-      ws.send(JSON.stringify(msg));
+      net.send(msg);
       break;
     case "roomInfo":
       if (!data.strArg) {
@@ -304,8 +207,7 @@ function onWsMessage(msg: any) {
     case "kick":
       state.roomId = 0;
       state.stage = "lobby";
-      shutdown();
-      deinit();
+      net.close();
       notifyKick();
       chrome.storage.local.set({ active: 0 });
     case "myId":
@@ -369,8 +271,21 @@ function sendVideo(video: VideoInfo) {
   let wsmsg = new WsMessage();
   wsmsg.cmd = "selectVideo";
   wsmsg.strArg = JSON.stringify(video);
-  ws.send(wsmsg.json());
+  net?.send(wsmsg);
   state.serverCurrent = video;
+}
+
+function onOpen(net: Network) {
+    let msg = new WsMessage();
+    msg.cmd = "setName";
+    msg.strArg = state.name;
+    net.send(msg);
+    if(state.roomId != -1) {
+      msg = new WsMessage();
+      msg.cmd = "rejoin";
+      msg.strArg = JSON.stringify({room:state.roomId, host:state.host});
+      net.send(msg);
+    }
 }
 
 function onMessage(inmsg: any, sender?: any) {
@@ -381,20 +296,17 @@ function onMessage(inmsg: any, sender?: any) {
 
   console.log("Got msg", msg);
   if (msg.is(CMD.INIT)) {
-    setupWs(URL);
-    awaitSocket(() => {
-      let msg = new WsMessage();
-      msg.cmd = "setName";
-      msg.strArg = state.name;
-      ws.send(msg.json());
-      retryCount = 0;
-    });
+    if (net instanceof Network){
+      net.close();
+      net = undefined;
+    }
+    net = new Network(URL, (a,b) => onWsMessage(a,b), (a) => onOpen(a), (a) => deinit());
     chrome.storage.local.set({ active: 1 });
   }
   if (msg.is(CMD.KILL)) {
-    if (ws) {
-      shutdown();
-      deinit();
+    if (net instanceof Network) {
+      net.close()
+      net = undefined;
     }
     chrome.storage.local.set({ active: 0 });
   }
@@ -477,25 +389,25 @@ function onMessage(inmsg: any, sender?: any) {
     wsmsg.cmd = "transferHost";
     wsmsg.intArg = msg.args[0] as number;
     state.host = false;
-    ws.send(wsmsg.json());
+    if (net instanceof Network) {
+      net.send(wsmsg);
+    }
     updateView();
   }
   if (msg.is(CMD.BECOMEHOST)) {
-    awaitSocket(() => {
-      state.host = true;
-      let m = new WsMessage();
-      m.cmd = "setHost";
-      m.intArg = 1;
-      ws.send(JSON.stringify(m));
-      if (curVideo) {
-        sendVideo(curVideo);
-      }
-    });
+    state.host = true;
+    let m = new WsMessage();
+    m.cmd = "setHost";
+    m.intArg = 1;
+    net?.send(m);
+    if (curVideo) {
+      sendVideo(curVideo);
+    }
   }
   if (msg.is(CMD.VIDEOSTATUS) && msg.hasArgs(1)) {
     state.vidstate = new VideoState(msg.args[0]);
     if (state.host) {
-      ws.send(state.vidstate.broadcast());
+      net?.send(state.vidstate.broadcast(), false);
     }
     updateView();
   }
@@ -516,11 +428,9 @@ function onMessage(inmsg: any, sender?: any) {
     }
   }
   if (msg.is(CMD.CREATEROOM)) {
-    awaitSocket(() => {
-      let m = new WsMessage();
-      m.cmd = "createRoom";
-      ws.send(m.json());
-    });
+    let m = new WsMessage();
+    m.cmd = "createRoom";
+    net?.send(m);
   }
 
   if (msg.is(CMD.SETTING) && msg.hasArgs(2)){
@@ -541,12 +451,10 @@ function onMessage(inmsg: any, sender?: any) {
     msg.hasArgs(1) &&
     typeof msg.args[0] == typeof 1
   ) {
-    awaitSocket(() => {
-      let m = new WsMessage();
-      m.cmd = "joinRoom";
-      m.intArg = msg.args[0] as number;
-      ws.send(m.json());
-    });
+    let m = new WsMessage();
+    m.cmd = "joinRoom";
+    m.intArg = msg.args[0] as number;
+    net?.send(m);
   }
   if (msg.is(CMD.VIDEOCONTROL) && msg.hasArgs(1)) {
     if (curVideo) {
